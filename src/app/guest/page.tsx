@@ -1,0 +1,1824 @@
+'use client'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CiExport, CiSearch } from "react-icons/ci";
+import { IoIosArrowUp, IoIosArrowDown, IoMdClose } from "react-icons/io";
+import { MdEdit, MdDelete, MdAdd, MdFavorite, MdFavoriteBorder, MdEmail } from "react-icons/md";
+import Button from '@mui/material/Button';
+import SingleSelect from "@/app/component/SingleSelect";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { ArrowDown, ArrowUp, ChevronsLeft, ChevronsRight, PlusSquare } from "lucide-react";
+import ProtectedRoute from "../component/ProtectedRoutes";
+import toast, { Toaster } from "react-hot-toast";
+
+
+import DeleteDialog from "../component/popups/DeleteDialog";
+import { getCampaign } from "@/store/masters/campaign/campaign";
+import { getTypes, getTypesByCampaign } from "@/store/masters/types/types";
+import { getCity } from "@/store/masters/city/city";
+import { getLocation, getLocationByCity } from "@/store/masters/location/location";
+import { handleFieldOptions } from "../utils/handleFieldOptions";
+import PopupMenu from "../component/popups/PopupMenu";
+import { getAllAdmins } from "@/store/auth";
+import { usersGetDataInterface } from "@/store/auth.interface";
+import { getSubtype, getSubtypeByCampaignAndType } from "@/store/masters/subtype/subtype";
+import { mailAllPropertyInterface, mailGetDataInterface } from "@/store/masters/mail/mail.interface";
+import { whatsappAllPropertyInterface, whatsappGetDataInterface } from "@/store/masters/whatsapp/whatsapp.interface";
+import { emailAllProperty, getMail } from "@/store/masters/mail/mail";
+import { getWhatsapp, whatsappAllProperty } from "@/store/masters/whatsapp/whatsapp";
+import FavouriteDialog from "../component/popups/FavouriteDialog";
+import AddButton from "../component/buttons/AddButton";
+import PageHeader from "../component/labels/PageHeader";
+import ListPopup from "../component/popups/ListPopup";
+import LoaderCircle from "../component/LoaderCircle";
+import useHorizontalScroll from "@/hooks/useHorizontalScroll";
+import { Description } from "@radix-ui/react-dialog";
+import LeadsSection from "../phonescreens/DashboardScreens/LeadsSection";
+/* import GuestTable from "../phonescreens/DashboardScreens/tables/GuestTable"; */
+import DynamicAdvance from "../phonescreens/DashboardScreens/DynamicAdvance";
+import { handleFieldOptionsObject } from "../utils/handleFieldOptionsObject";
+import ObjectSelect from "../component/ObjectSelect";
+import { FaCaretDown, FaCaretUp, FaCheck, FaCheckDouble, FaEye, FaPhone, FaWhatsapp } from "react-icons/fa";
+import { useAuth } from "@/context/AuthContext";
+import { exportToExcel } from "../utils/exportToExcel";
+import { getsubLocationByCityLoc } from "@/store/masters/sublocation/sublocation";
+import { Sub } from "@radix-ui/react-dropdown-menu";
+import { formatDateDMY } from "../utils/formatDateDMY";
+import TableDialog from "../component/popups/TableDialog";
+import { IoCheckmark, IoCheckmarkDoneOutline } from "react-icons/io5";
+import DateSelector from "../component/DateSelector";
+import BounceLoader from "react-spinners/BounceLoader";
+import SyncLoader from "react-spinners/SyncLoader"
+import BeatLoader from "react-spinners/BeatLoader"
+import HashLoader from "react-spinners/HashLoader"
+import { getReferences } from "@/store/masters/references/references";
+import { getPrice } from "@/store/masters/price/price";
+import { CheckDialogDataInterface, DeleteDialogDataInterface, GuestAdvInterface, guestAssignInterface, guestGetDataInterface } from "@/store/guest/guest.interface";
+import { assignGuest, deleteAllGuest, deleteGuest, getFilteredGuest, getGuest, updateGuest } from "@/store/guest/guest";
+import GuestTable from "../phonescreens/DashboardScreens/tables/GuestTable";
+
+
+interface DeleteAllDialogDataInterface { }
+
+export default function Guest() {
+    const router = useRouter();
+    const hasInitialFetched = useRef(false);
+
+    /* fetch */
+    const FETCH_CHUNK = 100;
+    const [keywordInput, setKeywordInput] = useState("");
+    const [fetchedCount, setFetchedCount] = useState(0);
+    const [hasMoreGuests, setHasMoreGuests] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [totalGuests, setTotalGuests] = useState(0);
+    const [totalGuestPage, setTotalGuestPage] = useState(1)
+    const [isFilteredTrigger, setIsFilteredTrigger] = useState(false);
+    const lastAppliedFiltersRef = useRef<typeof filters | null>(null);
+
+
+    /*NEW STATE FOR SELECTED GUESTS */
+    const [selectedGuests, setSelectedGuests] = useState<string[]>([]);
+    const [selectedUser, setSelectUser] = useState<string>();
+    const [selectedWhatsapptemplate, setSelectedWhatsapptemplate] = useState<string>();
+    const [selectedMailtemplate, setSelectedMailtemplate] = useState<string>();
+    const [users, setUsers] = useState<usersGetDataInterface[]>([])
+
+    const [mailTemplates, setMailtemplates] = useState<mailGetDataInterface[]>([])
+    const [whatsappTemplates, setWhatsappTemplates] = useState<whatsappGetDataInterface[]>([])
+
+
+    /*REST OF YOUR STATES (UNCHANGED) */
+    const [toggleSearchDropdown, setToggleSearchDropdown] = useState(false);
+    const [currentTablePage, setCurrentTablePage] = useState(1);
+    const [isAssignOpen, setIsAssignOpen] = useState(false);
+    const [isMailAllOpen, setIsMailAllOpen] = useState(false);
+    const [isWhatsappAllOpen, setIsWhatsappAllOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+    const [isFavouriteDialogOpen, setIsFavouriteDialogOpen] = useState(false);
+    const [dialogData, setDialogData] = useState<DeleteDialogDataInterface | null>(null);
+    const [dialogType, setDialogType] = useState<"delete" | "favourite" | null>(null);
+    const [fieldOptions, setFieldOptions] = useState<Record<string, any[]>>({});
+    const [isFavrouteGuest, setIsFavrouteGuest] = useState<boolean>(false);
+    const [guestTableLoader, setGuestTableLoader] = useState(true);
+    const [deleteAllDialogData, setDeleteAllDialogData] =
+        useState<DeleteAllDialogDataInterface | null>(null);
+    const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
+    const [tableDialogguestData, setTableDialogGuestData] = useState<guestGetDataInterface[]>([]);
+
+    const scrollRef = useHorizontalScroll();
+    const searchParams = useSearchParams();
+    const { admin } = useAuth();
+
+    const [rowsPerTablePage, setRowsPerTablePage] = useState(100);
+    const SEARCH_FIELDS = [
+        "Property",
+        "GuestName",
+        "ContactNumber",
+        "Adderess",
+        "City",
+        "Location",
+    ] as const;
+    const [toggleAiGenieSearchBy, setToggleAiGenieSearchBy] = useState(false);
+
+    const [filters, setFilters] = useState({
+        StatusAssign: [] as string[],
+        Property: [] as string[],
+        City: [] as string[],
+        Location: [] as string[],
+        User: [] as string[],
+        Keyword: "" as string,
+        SearchIn: [] as string[],
+        Limit: ["100"] as string[],
+        StartDate: [] as string[],
+        EndDate: [] as string[],
+    });
+
+    const [dependent, setDependent] = useState({
+        Property: { id: "", name: "" },
+        City: { id: "", name: "" },
+        Location: { id: "", name: "" },
+    });
+
+
+    const [guestData, setGuestData] = useState<guestGetDataInterface[]>([]);
+    const [guestAdv, setGuestAdv] = useState<GuestAdvInterface[]>([]);
+    const [exportingGuestData, setExportingGuestData] = useState<guestGetDataInterface[]>([]);
+    const [duplicateContacts, setDuplicateContacts] = useState<Record<string, boolean>>({});
+
+    const STEPS = {
+        SEARCH: "Searching Guest Data",
+        SHOW: "Showing Result",
+        FOUND: (count: number) => `${count} Guests Found`,
+
+    } as const;
+
+
+    const [currentStep, setCurrentStep] = useState<string>("");
+    const [fade, setFade] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
+    const changeStep = async (text: string) => {
+        setFade(true);              // fade out
+        await new Promise(r => setTimeout(r, 2000));
+
+        setCurrentStep(text);       // replace text
+        setFade(false);             // fade in
+    };
+
+    const wait = (ms: number) =>
+        new Promise(resolve => setTimeout(resolve, ms));
+
+
+
+
+
+
+
+    useEffect(() => {
+        const status = searchParams.get("Property");
+        if (!fieldOptions?.Campaign?.length) return;
+
+        if (status) {
+
+            const campaignObj = fieldOptions?.Campaign?.find(
+                (c) => c.Name === status
+            );
+            // Auto set filter
+            setFilters((prev) => ({
+                ...prev,
+                StatusAssign: [status],
+            }));
+            setDependent((prev) => ({
+                ...prev,
+                Campaign: { id: campaignObj?._id, name: campaignObj?.Name }
+            }))
+
+            const updatedFilters = {
+                ...filters,
+                Campaign: [status],
+            };
+
+            setGuestTableLoader(false);
+
+            // Fetch filtered data
+            handleSelectChange("Property", status, updatedFilters);
+        }
+        else {
+            getGuests();
+            fetchFields();
+        }
+        getTotalGuestPage();
+    }, [searchParams, fieldOptions.Campaign]);
+
+
+    useEffect(() => {
+        const datatoExport = guestData.filter((guest) => selectedGuests.includes(guest._id));
+        setExportingGuestData(datatoExport);
+    }, [selectedGuests]);
+
+    const getTotalGuestPage = async () => {
+        const data = await getGuest();
+        const total = Math.ceil(data.length / Number(filters.Limit[0])) || 1
+        setTotalGuestPage(total);
+        setTotalGuests(data.length);
+    }
+
+
+    useEffect(() => {
+        const total = Math.ceil(totalGuests / Number(filters.Limit[0])) || 1
+        setTotalGuestPage(total);
+    }, [filters, totalGuests]);
+
+
+    function getPlainTextFromHTML(htmlString: string) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, "text/html");
+        return doc.body.textContent || "";
+    }
+
+    const getGuests = async () => {
+        setGuestTableLoader(true);
+        setFetchedCount(0);
+        setHasMoreGuests(true);
+
+        const queryParams = new URLSearchParams();
+        queryParams.append("Limit", FETCH_CHUNK.toString());
+        queryParams.append("Skip", "0");
+
+        const data = await getFilteredGuest(queryParams.toString());
+
+        if (data) {
+            const mapped = data.map(mapGuest);
+            setGuestData(mapped);
+            setFetchedCount(mapped.length);
+            setHasMoreGuests(mapped.length === FETCH_CHUNK);
+        }
+
+
+        setGuestTableLoader(false);
+    };
+
+
+    const mapGuest = (item: any) => {
+        const date = new Date(item.createdAt);
+        const formattedDate =
+            date.getDate().toString().padStart(2, "0") + "-" +
+            (date.getMonth() + 1).toString().padStart(2, "0") + "-" +
+            date.getFullYear();
+
+        return {
+            _id: item._id,
+            Property: item.property.propertyName,
+            GuestName: item.GuestName,
+            Email: item.Email,
+            City: item.City,
+            Location: item.Location,
+            Address: item.Adderess,
+            ContactNumber: item.ContactNumber?.slice(0, 10),
+            AssignTo: item.AssignTo?.name,
+            isFavourite: item.isFavourite,
+            isChecked: item.isChecked,
+            Date: item.GuestDate ? formatDateDMY(item.GuestDate) : formattedDate,
+            GuestImage: item.GuestImage || "",
+            KycImage: item.KycImage || "",
+        };
+    };
+
+
+    const fetchMore = async () => {
+        if (isFetchingMore || !hasMoreGuests) return;
+
+        setIsFetchingMore(true);
+        setGuestTableLoader(true);
+
+        const queryParams = new URLSearchParams();
+        queryParams.append("Limit", FETCH_CHUNK.toString());
+        queryParams.append("Skip", guestData.length.toString());
+
+        Object.entries(filters).forEach(([key, value]) => {
+            if (key === "Limit") return;
+            if (Array.isArray(value)) value.forEach(v => queryParams.append(key, v));
+            if (typeof value === "string" && value) queryParams.append(key, value);
+        });
+
+        const data = await getFilteredGuest(queryParams.toString());
+
+        if (data) {
+            const mapped = data.map(mapGuest);
+            setGuestData(prev => [...prev, ...mapped]);
+            setFetchedCount(prev => prev + mapped.length);
+            setHasMoreGuests(mapped.length === FETCH_CHUNK);
+        }
+
+        setGuestTableLoader(false);
+        setIsFetchingMore(false);
+    };
+
+
+    const handleLastPage = async () => {
+        setGuestTableLoader(true);
+
+        const queryParams = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (key === "Limit") return;
+            if (Array.isArray(value)) value.forEach(v => queryParams.append(key, v));
+            if (typeof value === "string" && value) queryParams.append(key, value);
+        });
+
+        // Fetch all rows at once by not limiting
+        queryParams.delete("Limit");
+        queryParams.delete("Skip");
+
+        const data = await getFilteredGuest(queryParams.toString());
+        if (data) {
+            const mapped = data.map(mapGuest);
+            setGuestData(mapped);
+            setFetchedCount(mapped.length);
+            setHasMoreGuests(false); // all loaded
+            setTotalGuests(mapped.length);
+            // calculate last page using the freshly fetched data
+            const finalTotalPages = Math.ceil(mapped.length / rowsPerTablePage) || 1;
+            setCurrentTablePage(finalTotalPages); // jump to last page
+        }
+
+        setGuestTableLoader(false);
+    };
+
+
+
+
+
+    const handleDelete = async (data: DeleteDialogDataInterface | null) => {
+        if (!data) return;
+        const response = await deleteGuest(data.id);
+        if (response) {
+            toast.success(`Guest deleted successfully`);
+            setIsDeleteDialogOpen(false);
+            setDialogData(null);
+            if (isFilteredTrigger) {
+                await refreshGuestsWithLastFilters();
+                return;
+            }
+            await getGuests();
+        }
+    };
+
+    const handleFavourite = async (data: DeleteDialogDataInterface | null) => {
+        if (!data) return;
+        const formData = new FormData();
+        const current = guestData.find(c => c._id === data.id);
+        const newFav = !current?.isFavourite;
+        formData.append("isFavourite", newFav.toString());
+
+        const res = await updateGuest(data.id, formData);
+        if (res) {
+            toast.success("Favourite updated successfully");
+            setIsFavouriteDialogOpen(false);
+            setDialogData(null);
+            await getGuests();
+        } else {
+            toast.error("Failed to update favourite");
+        }
+    };
+
+    const handleChecked = async (data: CheckDialogDataInterface | null) => {
+        if (!data) return;
+        console.log("data is ", data)
+        const formData = new FormData();
+        const current = guestData.find(c => c._id === data.id);
+        const newChecked = !current?.isChecked;
+        console.log(" yes ", current?.isChecked)
+        formData.append("isChecked", newChecked.toString());
+
+        const res = await updateGuest(data.id, formData);
+        if (res) {
+            // toast.success("Favourite updated successfully");
+            // setIsFavouriteDialogOpen(false);
+            setGuestData(prev =>
+                prev.map(guest =>
+                    guest._id === data.id
+                        ? { ...guest, isChecked: newChecked }
+                        : guest
+                )
+            );
+            // await getGuests();
+        } else {
+            toast.error("Failed to check guest");
+        }
+    };
+
+    const handleFavouriteToggle = (id: string, name: string, number: string, isFavourite: boolean) => {
+        setDialogType("favourite");
+        setIsFavouriteDialogOpen(true);
+        setDialogData({
+            id,
+            GuestName: name,
+            ContactNumber: number
+        });
+        setIsFavrouteGuest(isFavourite);
+    };
+
+    /*   useEffect(() => {
+        filterByDate();
+      }, [filters.StartDate[0], filters.EndDate[0]]) */
+    const filterByDate = async () => {
+        if (!filters.StartDate[0] || !filters.EndDate[0])
+            return
+
+        const updatedFilters = {
+            ...filters,
+        };
+
+        //  CRITICAL: sync pagination filter state
+        lastAppliedFiltersRef.current = updatedFilters;
+        setIsFilteredTrigger(true);
+
+        const queryParams = new URLSearchParams();
+        queryParams.append("StartDate", filters.StartDate[0]);
+        queryParams.append("EndDate", filters.EndDate[0]);
+        /*     queryParams.append("Limit", FETCH_CHUNK.toString());
+            queryParams.append("Skip", "0");
+         */
+        const data = await getFilteredGuest(queryParams.toString());
+        const totalQueryParams = new URLSearchParams(queryParams);
+        /*   queryParams.append("Limit", FETCH_CHUNK.toString());
+          queryParams.append("Skip", "0"); */
+        if (data) {
+            const mapped = data.map(mapGuest);
+            setGuestData(mapped);
+            setFetchedCount(mapped.length);
+            setHasMoreGuests(mapped.length === FETCH_CHUNK);
+            setCurrentTablePage(1);
+        }
+        const totalfilteredData = await getFilteredGuest(
+            totalQueryParams.toString()
+        );
+
+        if (totalfilteredData) {
+            setTotalGuests(totalfilteredData.length);
+        }
+
+        setGuestTableLoader(false);
+
+    }
+
+    const handleSelectChange = async (field: keyof typeof filters, selected: string | string[], filtersOverride?: typeof filters) => {
+        setGuestTableLoader(true);
+        const updatedFilters = filtersOverride || {
+            ...filters,
+            [field]: Array.isArray(selected)
+                ? selected
+                : selected
+                    ? [selected]
+                    : [],
+        };
+        setFilters(updatedFilters);
+        lastAppliedFiltersRef.current = updatedFilters;
+        setIsFilteredTrigger(true);
+
+        const hasBothDates =
+            updatedFilters.StartDate?.length > 0 &&
+            updatedFilters.EndDate?.length > 0;
+
+
+        const queryParams = new URLSearchParams();
+        Object.entries(updatedFilters).forEach(([key, value]) => {
+            if (key === "Limit") return;
+            if (
+                (key === "StartDate" || key === "EndDate") &&
+                !hasBothDates
+            ) {
+                return;
+            }
+            if (Array.isArray(value) && value.length > 0) {
+                value.forEach((v) => queryParams.append(key, v));
+            } else if (typeof value === "string" && value) {
+                queryParams.append(key, value);
+            }
+        });
+
+
+
+        // Only paginate when NO date filter
+        if (!hasBothDates) {
+            queryParams.append("Limit", FETCH_CHUNK.toString());
+            queryParams.append("Skip", "0");
+        }
+
+        const data = await getFilteredGuest(queryParams.toString());
+        const totalQueryParams = new URLSearchParams(queryParams);
+        totalQueryParams.delete("Limit");
+        totalQueryParams.delete("Skip");
+
+
+
+        if (data) {
+            const mapped = data.map(mapGuest);
+
+            setGuestData(mapped);
+            setFetchedCount(mapped.length);
+            setHasMoreGuests(mapped.length === FETCH_CHUNK);
+            setCurrentTablePage(1);
+
+        }
+
+        const totalfilteredData = await getFilteredGuest(
+            totalQueryParams.toString()
+        );
+
+        if (totalfilteredData) {
+            setTotalGuests(totalfilteredData.length);
+            if (field === "Keyword")
+                await changeStep(STEPS.FOUND(totalfilteredData.length));
+        }
+
+        setGuestTableLoader(false);
+        console.log(" filter date length ", data.length)
+
+        return data;
+
+    };
+
+    const clearFilter = async () => {
+        setFilters({
+            StatusAssign: [],
+            Property: [],
+            City: [],
+            Location: [],
+            User: [],
+            Keyword: "",
+            SearchIn: [],
+            Limit: ["100"],
+            StartDate: [],
+            EndDate: [],
+        });
+        setDependent({
+            Property: { id: "", name: "" },
+            City: { id: "", name: "" },
+            Location: { id: "", name: "" },
+        })
+        setCurrentStep("")
+        setAiLoading(false)
+        setIsFilteredTrigger(false);
+        await getGuests();
+    };
+
+    const refreshGuestsWithLastFilters = async () => {
+        const appliedFilters = lastAppliedFiltersRef.current;
+
+        if (!appliedFilters) return;
+
+        setGuestTableLoader(true);
+
+        const queryParams = new URLSearchParams();
+        Object.entries(appliedFilters).forEach(([key, value]) => {
+            if (key === "Limit") return;
+            if (Array.isArray(value) && value.length > 0) {
+                value.forEach((v) => queryParams.append(key, v));
+            } else if (typeof value === "string" && value) {
+                queryParams.append(key, value);
+            }
+        });
+
+        queryParams.append("Limit", FETCH_CHUNK.toString());
+        queryParams.append("Skip", "0");
+
+        const data = await getFilteredGuest(queryParams.toString());
+
+        if (data) {
+            const mapped = data.map(mapGuest);
+            setGuestData(mapped);
+            setFetchedCount(mapped.length);
+            setHasMoreGuests(mapped.length === FETCH_CHUNK);
+            setCurrentTablePage(1);
+        }
+
+        setGuestTableLoader(false);
+    };
+
+
+    const totalTablePages = useMemo(() => {
+        return Math.ceil(guestData.length / rowsPerTablePage) || 1;
+    }, [guestData, rowsPerTablePage]);
+
+    const startIndex = (currentTablePage - 1) * rowsPerTablePage;
+    const currentRows = guestData.slice(startIndex, startIndex + rowsPerTablePage);
+
+
+    useEffect(() => {
+        const safeLimit = Number(filters.Limit?.[0]);
+        setRowsPerTablePage(safeLimit);
+        setCurrentTablePage(1);
+    }, [filters.Limit]);
+
+
+    const nexttablePage = () => {
+        if (currentTablePage !== totalTablePages)
+            setCurrentTablePage(currentTablePage + 1);
+    };
+    const prevtablePage = () => {
+        if (currentTablePage !== 1) setCurrentTablePage(currentTablePage - 1);
+    };
+
+    const [filterOptions, setFilterOptions] = useState({
+        StatusAssign: [] as string[],
+        Campaign: [],
+        GuestType: [],
+        GuestSubtype: [],
+        City: [],
+        Location: [],
+        User: [] as string[],
+    });
+
+    const fetchUsers = async () => {
+        const response = await getAllAdmins();
+
+        if (response) {
+            console.log("response ", response);
+
+            const admins = response?.admins?.filter((e) => e.role === "user" || e.role === "city_admin") ?? []; //ensure only user and city_admin roles are fetched
+
+            setUsers(
+                admins.map((item: any): usersGetDataInterface => ({
+                    _id: item?._id ?? "",
+                    name: item?.name ?? "",
+                }))
+            );
+
+            return;
+        }
+    };
+
+    const fetchEmailTemplates = async () => {
+        const response = await getMail();
+
+        if (response) {
+            console.log("response ", response);
+
+            const mailtemplates = response?.filter((e: any) => e.status === "Active") ?? []; //ensure only user roles are fetched
+            console.log(" mail data ", response)
+            setMailtemplates(
+                mailtemplates.map((item: any): mailGetDataInterface => ({
+                    _id: item?._id ?? "",
+                    name: item?.name ?? "",
+                    body: getPlainTextFromHTML(item?.body) ?? ""
+                }))
+            );
+
+            return;
+        }
+    };
+
+    const fetchWhatsappTemplates = async () => {
+        const response = await getWhatsapp();
+
+        if (response) {
+            console.log("response ", response);
+
+            const whatsapptemplates = response?.filter((e: any) => e.status === "Active") ?? []; //ensure only active status are fetched
+            console.log(" mail data ", response)
+            setWhatsappTemplates(
+                whatsapptemplates.map((item: any): whatsappGetDataInterface => ({
+                    _id: item?._id ?? "",
+                    name: item?.name ?? "",
+                    body: item?.body ?? ""
+                }))
+            );
+
+            return;
+        }
+    };
+
+
+    const handleDeleteAll = async () => {
+        if (guestData.length === 0) return;
+        const payload = {
+            guestIds: [...selectedGuests]
+        }
+        const response = await deleteAllGuest(payload);
+        if (response) {
+            toast.success(`All contacts deleted`);
+            setIsDeleteAllDialogOpen(false);
+            setDeleteAllDialogData(null);
+            setSelectedGuests([]);
+            if (isFilteredTrigger) {
+                await refreshGuestsWithLastFilters();
+                return;
+            }
+            getGuests();
+
+
+        }
+    };
+
+
+    //Fetch dropdown data
+    const fetchFields = async () => {
+        /*     await handleFieldOptions(
+              [
+                { key: "StatusAssign", staticData: ["Assigned", "Unassigned"] },
+                { key: "Campaign", fetchFn: getCampaign },
+                { key: "GuestType", fetchFn: getTypes },
+                { key: "GuestSubtype", fetchFn: getSubtype },
+                { key: "City", fetchFn: getCity },
+                { key: "Location", fetchFn: getLocation },
+                { key: "User", fetchFn: getAllAdmins },
+              ],
+              setFieldOptions
+            ); */
+    };
+
+    // Object-based fields (for ObjectSelect)
+    const objectFields = [
+        { key: "Campaign", fetchFn: getCampaign },
+        { key: "GuestType", staticData: [] },
+        { key: "GuestSubtype", staticData: [] },
+        { key: "City", fetchFn: getCity },
+        { key: "Location", staticData: [] }, // dependent
+        { key: "SubLocation", staticData: [] }, // dependent
+
+    ];
+
+    // Simple array fields (for normal Select)
+    const arrayFields = [
+        { key: "StatusAssign", staticData: ["Assigned", "Unassigned"] },
+        { key: "User", fetchFn: getAllAdmins },
+        { key: "ReferenceId", fetchFn: getReferences },
+        { key: "Price", fetchFn: getPrice },
+    ];
+
+
+    useEffect(() => {
+        const loadFieldOptions = async () => {
+            await handleFieldOptionsObject(objectFields, setFieldOptions);
+            await handleFieldOptions(arrayFields, setFieldOptions);
+        };
+        loadFieldOptions();
+    }, []);
+
+
+    // Run this whenever parent filter changes
+    useEffect(() => {
+        const cityId = dependent.City.id;
+        const locationId = dependent.Location.id;
+
+
+        if (cityId) {
+            fetchLocation(cityId);
+        } else {
+            setFieldOptions(prev => ({ ...prev, Location: [] }));
+            setFilters(prev => ({ ...prev, Location: [] }));
+        }
+
+        if (cityId && locationId) {
+            fetchSubLocation(cityId, locationId);
+        } else {
+            setFieldOptions(prev => ({ ...prev, SubLocation: [] }));
+            setFilters(prev => ({ ...prev, SubLocation: [] }));
+        }
+
+    }, [dependent.City.id, dependent.Location.id]);
+
+
+
+    const fetchLocation = async (cityId: string) => {
+        try {
+
+            const res = await getLocationByCity(cityId);
+            setFieldOptions((prev) => ({ ...prev, Location: res || [] }));
+        } catch (error) {
+            console.error("Error fetching location:", error);
+            setFieldOptions((prev) => ({ ...prev, Location: [] }));
+        }
+    };
+
+    const fetchSubLocation = async (cityId: string, locationId: string) => {
+        try {
+            const res = await getsubLocationByCityLoc(cityId, locationId);
+            setFieldOptions((prev) => ({ ...prev, SubLocation: res || [] }));
+        } catch (error) {
+            console.error("Error fetching sublocation:", error);
+            setFieldOptions((prev) => ({ ...prev, SubLocation: [] }));
+        }
+    };
+
+
+
+
+
+    /* SELECT ALL HANDLER */
+    const handleSelectAll = () => {
+        const allIds = currentRows.map((c) => c._id);
+        setSelectedGuests((prev) =>
+            allIds.every((id) => prev.includes(id))
+                ? prev.filter((id) => !allIds.includes(id)) // unselect all
+                : [...new Set([...prev, ...allIds])] // select all visible rows
+        );
+    };
+
+    /* ✅ SELECT SINGLE ROW HANDLER */
+    const handleSelectRow = (id: string) => {
+        setSelectedGuests((prev) =>
+            prev.includes(id)
+                ? prev.filter((cid) => cid !== id)
+                : [...prev, id]
+        );
+    };
+
+    const handleSelectUser = (id: string) => {
+        setSelectUser(prev => (prev === id ? undefined : id)); //  only one user at a time
+    };
+
+    const handleSelectMailtemplate = (id: string) => {
+        setSelectedMailtemplate(prev => (prev === id ? undefined : id)); //  only one user at a time
+    };
+
+    const handleSelectWhatsapptemplate = (id: string) => {
+        setSelectedWhatsapptemplate(prev => (prev === id ? undefined : id)); // only one user at a time
+    };
+
+
+    const handleAssignto = async () => {
+        if (!selectedUser) {
+            toast.error("Please select a user");
+            return;
+        }
+
+        const payload: guestAssignInterface = {
+            guestIds: selectedGuests,
+            assignToId: selectedUser,
+        };
+
+        console.log(payload)
+
+        const response = await assignGuest(payload);
+        if (response) {
+            toast.success(" guests assigned succesfully")
+            await getGuests();
+            setIsAssignOpen(false);
+            return response
+        }
+        toast.error("failed to assign guests")
+        setIsAssignOpen(false)
+    };
+
+    const handleMailAll = async () => {
+        if (!selectedMailtemplate) {
+            toast.error("Please select a template");
+            return;
+        }
+
+        const payload: mailAllPropertyInterface = {
+            propertyIds: selectedGuests,
+            templateId: selectedMailtemplate,
+        };
+
+        console.log(payload)
+
+        const response = await emailAllProperty(payload);
+        if (response) {
+            toast.success("Email guests succesfully")
+            setIsMailAllOpen(false);
+            return response
+        }
+        toast.error("failed to email guests")
+        setIsMailAllOpen(false);
+    };
+
+    const handleWhatsappAll = async () => {
+        if (!selectedWhatsapptemplate) {
+            toast.error("Please select a template");
+            return;
+        }
+
+        const payload: whatsappAllPropertyInterface = {
+            propertyIds: selectedGuests,
+            templateId: selectedWhatsapptemplate,
+        };
+
+        console.log(payload)
+
+        const response = await whatsappAllProperty(payload);
+        if (response) {
+            toast.success("Whatsapp guests succesfully")
+            setIsWhatsappAllOpen(false);
+            return response
+        }
+        toast.error("failed to whatsapp guests")
+        setIsWhatsappAllOpen(false);
+    };
+
+    const phonetableheader = [{
+        key: "Property", label: "Property"
+    },
+    {
+        key: "GuestName", label: "Guest Name"
+    },
+    {
+        key: "Location", label: "Location"
+    },
+    {
+        key: "Email", label: "Email"
+    },
+    {
+        key: "ContactNumber", label: "Ph. No."
+    }]
+
+    const phoneViewAllHaders = [
+        {
+            key: "Property", label: "Property"
+        },
+        {
+            key: "GuestName", label: "Name"
+        },
+        {
+            key: "Location", label: "Location"
+        },
+        {
+            key: "Email", label: "Email"
+        },
+        {
+            key: "ContactNumber", label: "Contact No"
+        },
+        {
+            key: "GuestDate", label: "Date"
+        }
+    ]
+
+    const addFollowup = (id: string) => router.push(`/rooms/allotment/add`);
+
+
+
+    const handleTableDialogData = async (contactno: string) => {
+        const queryParams = new URLSearchParams();
+        queryParams.append("Limit", "100000");
+        queryParams.append("Skip", "0");
+        queryParams.append("ContactNumber", contactno);
+        const data = await getFilteredGuest(queryParams.toString());
+        if (data.length > 0) {
+            console.log(" data of contact no is ", data)
+            const mapped = data.map(mapGuest);
+            setTableDialogGuestData(mapped)
+            return mapped
+        }
+        toast.error("Sever Error, please try again")
+        return [];
+    }
+
+    const isDuplicateContactNo = async (contactNo: string, currentId: string) => {
+        if (duplicateContacts[contactNo] !== undefined) return duplicateContacts[contactNo];
+
+        const queryParams = new URLSearchParams();
+        queryParams.append("Limit", "100000");
+        queryParams.append("Skip", "0");
+        queryParams.append("ContactNumber", contactNo);
+
+        const data = await getFilteredGuest(queryParams.toString());
+
+        // Exclude current row
+        const hasDuplicates = data.filter((d: any) => d._id !== currentId).length > 0;
+
+        setDuplicateContacts(prev => ({ ...prev, [contactNo]: hasDuplicates }));
+
+        return hasDuplicates;
+    };
+
+
+
+    useEffect(() => {
+        currentRows.forEach(item => {
+            isDuplicateContactNo(item.ContactNumber, item._id);
+        });
+    }, [currentRows]);
+
+    const aiGenieSearch = async () => {
+        if (!keywordInput.trim()) return;
+
+        await wait(800);
+
+        // STEP 2
+        await changeStep(STEPS.SHOW);
+        await wait(800)
+
+        // STEP 3
+        const filtersOverride = {
+            ...filters,
+            Keyword: keywordInput,
+        };
+
+        if (filters.SearchIn.length > 0) {
+            filtersOverride.SearchIn = filters.SearchIn;
+        }
+        const data = await handleSelectChange("Keyword", keywordInput, filtersOverride);
+        const count = data?.length ?? 0;
+
+        await wait(1000);
+
+        setAiLoading(false);
+
+    };
+
+
+
+
+
+    return (
+        <ProtectedRoute>
+            {/* whatsapp all popup */}
+            <Toaster position="top-right" />
+            {isWhatsappAllOpen && selectedGuests.length > 0 && (
+                <ListPopup
+                    title="Whatsapp Guests"
+                    list={whatsappTemplates}
+                    selected={selectedWhatsapptemplate}
+                    onSelect={handleSelectWhatsapptemplate}
+                    onSubmit={handleWhatsappAll}
+                    submitLabel="Whatsapp"
+                    onClose={() => {
+                        setSelectedGuests([]);
+                        setIsWhatsappAllOpen(false)
+                    }}
+                />
+            )}
+            {/* mail all popup */}
+            {isMailAllOpen && selectedGuests.length > 0 && (
+                <ListPopup
+                    title="Mail Guests"
+                    list={mailTemplates}
+                    selected={selectedMailtemplate}
+                    onSelect={handleSelectMailtemplate}
+                    onSubmit={handleMailAll}
+                    submitLabel="Mail"
+                    onClose={() => {
+                        setSelectedGuests([]);
+                        setIsMailAllOpen(false)
+                    }}
+                />
+            )}
+
+            {/* Favourite Dialog */}
+            <FavouriteDialog<DeleteDialogDataInterface>
+                isOpen={isFavouriteDialogOpen}
+                title={`Are you sure you want to ${isFavrouteGuest ? "unfavourite" : "favourite"} this guest?`}
+                data={dialogData}
+                onClose={() => {
+                    setIsFavouriteDialogOpen(false);
+                    setDialogData(null);
+                }}
+                onDelete={handleFavourite}
+            />
+
+            {/* guest by contact number */}
+            {/*  <TableDialog
+        isOpen={isTableDialogOpen}
+        title="Guests By"
+        data={tableDialogguestData}
+        onClose={() => {
+          setIsTableDialogOpen(false);
+        }}
+      /> */}
+
+
+            {/* Mobile Guest Page */}
+            <div className=" sm:hidden min-h-[calc(100vh-56px)] overflow-auto max-sm:py-2 p-2">
+
+                <div className=" flex justify-between items-center px-0">
+                    <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl ">Guests</h1>
+
+                </div>
+                <div className=" w-full">
+                    <DynamicAdvance addUrl="guest/add">
+
+                        <ObjectSelect
+                            options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
+                            label={"City"}
+                            value={dependent.City.id}
+                            getLabel={(item) => item?.Name || ""}
+                            getId={(item) => item?._id || ""}
+                            onChange={(selectedId) => {
+                                const selectedObj = fieldOptions.City.find((i) => i._id === selectedId);
+                                if (selectedObj) {
+                                    const updatedFilters = {
+                                        ...filters,
+                                        City: [selectedObj.Name],
+                                        Location: []
+                                    };
+                                    setFilters(updatedFilters);
+
+                                    setDependent(prev => ({
+                                        ...prev,
+                                        City: { id: selectedObj._id, name: selectedObj.Name },
+                                        Location: { id: "", name: "" },
+                                    }));
+                                    handleSelectChange("City", selectedObj.Name, updatedFilters)
+                                }
+                            }}
+                        />
+                        <ObjectSelect
+                            options={Array.isArray(fieldOptions?.Location) ? fieldOptions.Location : []}
+                            label={"Location"}
+                            value={dependent.Location.id}
+                            getLabel={(item) => item?.Name || ""}
+                            getId={(item) => item?._id || ""}
+                            onChange={(selectedId) => {
+                                const selectedObj = fieldOptions.Location.find((i) => i._id === selectedId);
+                                if (selectedObj) {
+                                    const updatedFilters = {
+                                        ...filters,
+                                        Location: [selectedObj.Name]
+                                    };
+                                    setFilters(updatedFilters);
+
+                                    setDependent(prev => ({
+                                        ...prev,
+                                        Location: { id: selectedObj._id, name: selectedObj.Name },
+                                    }));
+                                    handleSelectChange("Location", selectedObj.Name, updatedFilters)
+                                }
+                            }}
+                        />
+
+
+                        <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
+                        <div className=" w-full flex justify-end">
+                            <button type="reset" onClick={clearFilter} className="text-red-500 cursor-pointer hover:underline text-sm px-5 py-2 rounded-md">
+                                Clear Search
+                            </button>
+                        </div>
+
+                    </DynamicAdvance>
+                </div>
+                 <GuestTable
+          leads={guestData}
+          labelLeads={phonetableheader}
+          allLabelLeads={phoneViewAllHaders}
+          onAdd={(id) => addFollowup(id)}
+          onEdit={(id) => router.push(`/guest/edit/${id}`)}
+          onWhatsappClick={(lead) => {
+            setSelectedGuests([lead._id]);
+            setIsWhatsappAllOpen(true);
+            fetchWhatsappTemplates();
+          }}
+          onMailClick={(lead) => {
+            setSelectedGuests([lead._id]);
+            setIsMailAllOpen(true);
+            fetchEmailTemplates();
+          }}
+          onFavourite={(lead) => {
+            handleFavouriteToggle(lead._id, lead.GuestName, lead.ContactNumber, lead.isFavourite ?? false)
+          }}
+          loader={guestTableLoader}
+          hasMoreGuests={hasMoreGuests}
+          fetchMore={fetchMore}
+        />
+
+            </div>
+
+            {/* Desktop Guest page */}
+            <div className=" min-h-[calc(100vh-56px)] max-sm:hidden overflow-auto max-md:py-10">
+
+
+                {/* Delete Dialog */}
+                <DeleteDialog<DeleteDialogDataInterface>
+                    isOpen={isDeleteDialogOpen}
+                    title="Are you sure you want to delete this guest?"
+                    data={dialogData}
+                    onClose={() => {
+                        setIsDeleteDialogOpen(false);
+                        setDialogData(null);
+                    }}
+                    onDelete={handleDelete}
+                />
+
+                <DeleteDialog<DeleteAllDialogDataInterface>
+                    isOpen={isDeleteAllDialogOpen}
+                    title="Are you sure you want to delete ALL guests?"
+                    data={deleteAllDialogData}
+                    onClose={() => {
+                        setIsDeleteAllDialogOpen(false);
+                        setDeleteAllDialogData(null);
+                    }}
+                    onDelete={handleDeleteAll}
+                />
+
+
+
+                {/* Assign User Popup */}
+                {isAssignOpen && selectedGuests.length > 0 && (
+                    <ListPopup
+                        title="Assign Guests"
+                        list={users}
+                        selected={selectedUser}
+                        onSelect={handleSelectUser}
+                        onSubmit={handleAssignto}
+                        submitLabel="Assign"
+                        onClose={() => setIsAssignOpen(false)}
+                    />
+                )}
+
+
+                {/* ---------- TABLE START ---------- */}
+
+                <div className="p-4 px-0 max-md:p-3 w-full rounded-md bg-white max-[450px]:hidden">
+                    <div className="flex justify-between items-center p-2 px-4">
+                        <PageHeader title="Dashboard" subtitles={["Guest"]} />
+                        <div className=" flex items-center gap-4">
+                            {
+                                admin?.role === "administrator" && <button className=" flex justify-center items-center gap-1 hover:bg-[var(--color-primary-light)] cursor-pointer text-[var(--color-primary)] text-sm bg-[var(--color-primary-lighter)] px-2 py-1 rounded-sm " onClick={() => {
+                                    if (selectedGuests.length === 0) {
+                                        toast.error("Please select at least one guest to export")
+                                        return
+                                    }
+                                    exportToExcel(exportingGuestData, "guest_list")
+                                }}>
+                                    <CiExport /> Export
+                                </button>
+                            }
+                            <AddButton
+                                url="/guest/add"
+                                text="Add"
+                                icon={<PlusSquare size={18} />}
+                            />
+                        </div>
+
+
+                    </div>
+
+
+                    {/* TABLE */}
+                    <section className="flex flex-col mt-6 rounded-md">
+                        <div className="m-5 relative">
+
+                            <div className="flex justify-between cursor-pointer items-center py-1 px-2 border border-gray-800 rounded-md" onClick={() => setToggleSearchDropdown(!toggleSearchDropdown)}>
+                                <h3 className="flex items-center gap-1"><CiSearch />Advance Search</h3>
+                                <button
+                                    type="button"
+
+                                    className="p-2 hover:bg-gray-200 rounded-md cursor-pointer"
+                                >
+                                    {toggleSearchDropdown ? <IoIosArrowUp /> : <IoIosArrowDown />}
+                                </button>
+                            </div>
+
+                            <div className={`overflow-hidden ${toggleSearchDropdown ? "overflow-visible max-h-[2000px]" : "overflow-hidden max-h-0"} transition-all duration-500 ease-in-out px-5`}>
+                                <div className="flex flex-col gap-5 my-5">
+                                    <div className="grid grid-cols-3 gap-5 max-md:grid-cols-1 max-lg:grid-cols-2">
+                                        {/*  <ObjectSelect
+                      options={Array.isArray(fieldOptions?.Campaign) ? fieldOptions.Campaign : []}
+                      label={"Campaign"}
+                      value={dependent.Campaign.id}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+                        const selectedObj = fieldOptions.Campaign.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            Campaign: [selectedObj.Name],
+                            GuestType: [],   // reset
+                            GuestSubType: []
+                          };
+                          setFilters(updatedFilters);
+
+                          setDependent(prev => ({
+                            ...prev,
+                            Campaign: { id: selectedObj._id, name: selectedObj.Name },
+                            GuestType: { id: "", name: "" },   // reset
+                            GuestSubType: { id: "", name: "" }
+                          }));
+                          handleSelectChange("Campaign", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+                    />
+
+                    */}
+
+                                        <ObjectSelect
+                                            options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
+                                            label={"City"}
+                                            value={dependent.City.id}
+                                            getLabel={(item) => item?.Name || ""}
+                                            getId={(item) => item?._id || ""}
+                                            onChange={(selectedId) => {
+                                                const selectedObj = fieldOptions.City.find((i) => i._id === selectedId);
+                                                if (selectedObj) {
+                                                    const updatedFilters = {
+                                                        ...filters,
+                                                        City: [selectedObj.Name],
+                                                        Location: []
+                                                    };
+                                                    setFilters(updatedFilters);
+
+                                                    setDependent(prev => ({
+                                                        ...prev,
+                                                        City: { id: selectedObj._id, name: selectedObj.Name },
+                                                        Location: { id: "", name: "" },
+                                                    }));
+                                                    handleSelectChange("City", selectedObj.Name, updatedFilters)
+                                                }
+                                            }}
+                                        />
+                                        <ObjectSelect
+                                            options={Array.isArray(fieldOptions?.Location) ? fieldOptions.Location : []}
+                                            label={"Location"}
+                                            value={dependent.Location.id}
+                                            getLabel={(item) => item?.Name || ""}
+                                            getId={(item) => item?._id || ""}
+                                            onChange={(selectedId) => {
+                                                const selectedObj = fieldOptions.Location.find((i) => i._id === selectedId);
+                                                if (selectedObj) {
+                                                    const updatedFilters = {
+                                                        ...filters,
+                                                        Location: [selectedObj.Name]
+                                                    };
+                                                    setFilters(updatedFilters);
+
+                                                    setDependent(prev => ({
+                                                        ...prev,
+                                                        Location: { id: selectedObj._id, name: selectedObj.Name },
+                                                    }));
+                                                    handleSelectChange("Location", selectedObj.Name, updatedFilters)
+                                                }
+                                            }}
+                                            isSearchable
+                                        />
+
+                                        <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
+
+                                        <SingleSelect options={["10", "25", "50", "100"]} value={filters.Limit[0]} label="Limit" onChange={(v) => {
+
+                                            handleSelectChange("Limit", v)
+                                        }} />
+                                        <DateSelector label="From" value={filters.StartDate[0]} onChange={(v) => handleSelectChange("StartDate", v)} />
+                                        <DateSelector label="To" value={filters.EndDate[0]} onChange={(v) => handleSelectChange("EndDate", v)} />
+
+                                    </div>
+
+
+                                </div>
+
+                                {/* Keyword Search */}
+                                <form className="flex  max-lg:flex-col justify-between items-center gap-2"
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        if (keywordInput.trim() === "")
+                                            return
+                                        setAiLoading(true);
+                                        setCurrentStep(STEPS.SEARCH)
+                                        aiGenieSearch();
+                                    }}
+                                >
+
+                                    <div className=" w-[80%] ">
+                                        <div>
+                                            <label className="flex gap-1 mb-2 items-center text-sm font-bold text-[var(--color-secondary-darker)] ml-1">{aiLoading ? <span>
+                                                <BounceLoader
+                                                    loading={true}
+                                                    color="var(--color-primary)"
+                                                    size={25}
+                                                    aria-label="Loading Spinner"
+                                                    data-testid="loader"
+                                                /></span> : <span><img className=" w-[25px] " src="/aiBot.png" /></span>
+                                            }
+                                                <div className="">AI Genie</div>
+
+
+                                            </label>
+                                            <p className={`text-gray-400 font-light text-xs ml-2 mb-2  flex items-center gap-[1px] `}>
+                                                <span
+                                                    className={`transition-opacity duration-300 `}
+                                                >
+                                                    {currentStep}
+                                                </span>
+
+                                                {aiLoading && <span className="translate-y-[2px]">
+                                                    <BeatLoader size={2} color="gray" />
+                                                </span>}
+
+                                            </p>
+                                            <div className="">
+                                                <div className=" flex justify-between items-center border border-gray-300 rounded-md w-full">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="What you want to search?"
+                                                        className="outline-none w-full px-3 py-2 "
+                                                        value={keywordInput}
+                                                        onChange={(e) => setKeywordInput(e.target.value)}
+                                                    />
+                                                    <span className=" cursor-pointer mr-3" onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}>{toggleAiGenieSearchBy ? <FaCaretUp /> : <FaCaretDown />}</span>
+                                                </div>
+
+                                                <div className={` mt-5 overflow-hidden transition-all duration-300 ${toggleAiGenieSearchBy ? " h-[150px]" : " h-0"}`}>
+                                                    {/* Unselected Fields */}
+                                                    <div className="flex flex-wrap gap-2 px-3 mb-5">
+                                                        {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
+                                                            <button
+                                                                key={field}
+                                                                type="button"
+                                                                className="px-2 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 transition"
+                                                                onClick={() =>
+                                                                    setFilters(prev => ({
+                                                                        ...prev,
+                                                                        SearchIn: [...prev.SearchIn, field],
+                                                                    }))
+                                                                }
+                                                            >
+                                                                {field.toLowerCase()}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Selected Fields */}
+                                                    <div className="">
+                                                        {filters.SearchIn.length > 0 && <h5 className=" text-gray-500 text-sm my-2 mx-2">Selected</h5>}
+                                                        <div className="flex flex-wrap gap-2 px-3">
+
+                                                            {filters.SearchIn.map((field) => (
+                                                                <div
+                                                                    key={field}
+                                                                    className="group relative flex items-center px-2 py-1 border border-blue-400 rounded-md text-sm bg-blue-100"
+                                                                >
+                                                                    {field.toLowerCase()}
+                                                                    <button
+                                                                        className="ml-2 opacity-0 cursor-pointer group-hover:opacity-100 transition-opacity text-sm text-[var(--color-primary)]"
+                                                                        onClick={() =>
+                                                                            setFilters(prev => ({
+                                                                                ...prev,
+                                                                                SearchIn: prev.SearchIn.filter(f => f !== field),
+                                                                            }))
+                                                                        }
+                                                                    >
+                                                                        <IoMdClose />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                        </div>
+
+
+
+
+                                    </div>
+
+                                    <div className={` flex justify-center items-center w-[30%] transition duration-300  ${toggleAiGenieSearchBy ? " lg:-mt-32" : " lg:mt-5"} `}>
+                                        {!aiLoading ? <button type="submit" className="border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
+                                            Explore
+                                        </button> : <button type="button" className="flex gap-1 justify-center items-center border border-[var(--color-primary)]  bg-[var(--color-primary)] text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
+                                            Exploring <HashLoader
+                                                loading={true}
+                                                color="white"
+                                                size={12}
+                                                aria-label="Loading Spinner"
+                                                data-testid="loader"
+                                            />
+                                        </button>}
+
+                                        <button type="reset" onClick={clearFilter} className="text-red-500 cursor-pointer hover:underline text-sm px-5 py-2  rounded-md ml-3">
+                                            Clear Search
+                                        </button>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                        <div className=" overflow-auto relative px-3" ref={scrollRef}>
+                            <div className=" flex justify-between items-center sticky top-0 left-0 w-full">
+                                <div className="flex gap-10 items-center px-3 py-4 min-w-max text-gray-700">
+
+                                    <label htmlFor="selectall" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
+                                        <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                                        <span className="relative">Select All</span>
+                                    </label>
+                                    <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                                        if (selectedGuests.length <= 0) toast.error("please select atleast 1 guest")
+                                        else {
+                                            setIsAssignOpen(true);
+                                            fetchUsers()
+                                        } 0
+                                    }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                                        <span className="relative">Asign To</span></button>
+                                    <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                                        if (selectedGuests.length <= 0) toast.error("please select atleast 1 guest")
+                                        else {
+                                            setIsMailAllOpen(true);
+                                            fetchEmailTemplates()
+                                        }
+                                    }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                                        <span className="relative">Email All</span></button>
+                                    <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                                        if (selectedGuests.length <= 0) toast.error("please select atleast 1 guest")
+                                        else {
+                                            setIsWhatsappAllOpen(true);
+                                            fetchWhatsappTemplates()
+                                        }
+                                    }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                                        <span className="relative">SMS All</span></button>
+                                    {/*                 <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
+                  <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                  <span className="relative ">Mass Update</span>
+                </button> */}
+
+                                    {
+                                        admin?.role !== "user" && <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                                            if (guestData.length > 0) {
+                                                if (selectedGuests.length < 1) {
+                                                    const firstPageIds = currentRows.map((c) => c._id);
+                                                    setSelectedGuests(firstPageIds);
+                                                }
+
+                                                setIsDeleteAllDialogOpen(true);
+                                                setDeleteAllDialogData({});
+                                            }
+                                        }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                                            <span className="relative ">Delete All</span>
+                                        </button>
+                                    }
+
+
+                                </div>
+                                {selectedGuests.length > 0 && <p className=" text-gray-400 font-extralight text-sm mx-3">selected {selectedGuests.length}</p>}
+                            </div>
+                            <div className=" max-h-[600px] overflow-y-auto">
+                                <table className="table-auto relative w-full border-separate border-spacing-0 text-sm border border-gray-200">
+                                    <thead className="bg-[var(--color-primary)] text-white sticky top-0 left-0 z-[5]">
+                                        <tr>
+
+                                            {/* ✅ SELECT ALL CHECKBOX COLUMN */}
+                                            <th className="px-2 py-3 border border-[var(--color-secondary-dark)] text-left">
+
+                                                <input
+                                                    id="selectall"
+                                                    type="checkbox"
+                                                    className=" hidden"
+                                                    checked={
+                                                        currentRows.length > 0 &&
+                                                        currentRows.every((r) => selectedGuests.includes(r._id))
+                                                    }
+                                                    onChange={handleSelectAll}
+                                                />
+                                            </th>
+
+                                            <th className="px-2 py-3 border border-[var(--color-secondary-dark)] text-left  max-w-[60px]">S.No.</th>
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-center">Guest Image</th>
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Property</th>
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Name</th>
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Address</th>
+                                            {/*  <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">{getLabel("Location", "Location")}</th> */}
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-center">Contact No</th>
+                                            {/* <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">{getLabel("AssignTo", "Assign To")}</th> */}
+                                            <th className="px-3 py-3 border border-[var(--color-secondary-dark)] text-left max-w-[100px]">Email</th>
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Date</th>
+                                            <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Actions</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {guestTableLoader ?
+                                            <tr>
+                                                <td colSpan={12} className="text-center py-4 text-gray-500">
+                                                    Loading guests...
+                                                </td>
+                                            </tr> : currentRows.length > 0 ? (
+                                                currentRows.map((item, index) => {
+                                                    return <tr key={item._id} className="border-t hover:bg-[#f7f6f3] transition-all duration-200">
+
+                                                        {/* ✅ ROW CHECKBOX */}
+                                                        <td className="px-2 py-3 border border-gray-200">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedGuests.includes(item._id)}
+                                                                onChange={() => handleSelectRow(item._id)}
+                                                            />
+                                                        </td>
+
+                                                        <td className="px-2 py-3 border border-gray-200 break-all whitespace-normal max-w-[60px]">{(currentTablePage - 1) * rowsPerTablePage + (index + 1)}</td>
+                                                        <td className="px-2 py-3 border border-gray-200 text-center  "> 
+                                                            <img
+                                                            src={item.GuestImage?.[0]}
+                                                            alt="photo gallery"
+                                                            className="w-28 h-32 rounded-md mx-auto object-cover border"
+                                                        /></td>
+                                                        <td className="px-2 py-3 border border-gray-200  ">{item.Property}</td>
+                                                        <td className="px-2 py-3 border  border-gray-200 break-all whitespace-normal max-w-[90px] ">{item.GuestName}</td>
+                                                        <td
+                                                            className={`px-2 py-3 border border-gray-200 break-all whitespace-normal max-w-[200px] ${item.Address ? "min-w-[160px]" : ""
+                                                                }`}
+                                                        >
+                                                            {item.Address}
+                                                        </td>
+                                                        {/*  <td className="px-2 py-3 border border-gray-200">{item.Location}</td> */}
+                                                        <td className="px-2 py-3 border border-gray-200 break-all text-center whitespace-normal max-w-[140px]">{(item.ContactNumber) && <>{<div className=" "
+
+                                                        >{item.ContactNumber}</div>}<span className=" flex justify-center items-center"> <Button
+                                                            component="a"
+                                                            href={`tel:${item.ContactNumber}`}
+                                                            sx={{
+                                                                backgroundColor: "#E8F5E9",
+                                                                color: "var(--color-primary)",
+                                                                minWidth: "14px",
+                                                                height: "24px",
+                                                                borderRadius: "8px",
+                                                                margin: "4px"
+                                                            }} ><FaPhone size={12} /></Button>
+                                                                <Button
+                                                                    sx={{
+                                                                        backgroundColor: "#E8F5E9",
+                                                                        color: "var(--color-primary)",
+                                                                        minWidth: "14px",
+                                                                        height: "24px",
+                                                                        borderRadius: "8px",
+                                                                        margin: "4px"
+                                                                    }}
+                                                                    onClick={() => {
+                                                                        setSelectedGuests([item._id])
+                                                                        setSelectUser(item._id)
+                                                                        setIsMailAllOpen(true);
+                                                                        fetchEmailTemplates();
+                                                                    }}
+                                                                ><MdEmail size={14} /></Button>
+                                                                <Button
+                                                                    onClick={() => {
+                                                                        setSelectedGuests([item._id]);
+                                                                        setSelectUser(item._id);
+                                                                        setIsWhatsappAllOpen(true);
+                                                                        fetchWhatsappTemplates()
+
+                                                                    }}
+                                                                    sx={{
+                                                                        backgroundColor: "#E8F5E9",
+                                                                        color: "var(--color-primary)",
+                                                                        minWidth: "14px",
+                                                                        height: "24px",
+                                                                        borderRadius: "8px",
+                                                                        margin: "4px"
+                                                                    }} ><FaWhatsapp size={14} /></Button>
+
+                                                            </span>
+                                                            {duplicateContacts[item.ContactNumber] && <span>
+                                                                <Button
+                                                                    onClick={() => {
+                                                                        setIsTableDialogOpen(true);
+                                                                        handleTableDialogData(item.ContactNumber);
+                                                                    }}
+                                                                    sx={{
+                                                                        backgroundColor: "#E8F5E9",
+                                                                        color: "var(--color-primary)",
+                                                                        minWidth: "100px",
+                                                                        height: "24px",
+                                                                        borderRadius: "8px",
+                                                                        margin: "4px"
+                                                                    }} >
+                                                                    <FaEye size={12} />
+                                                                </Button>
+                                                            </span>}
+
+                                                        </>
+                                                        }
+                                                        </td>
+                                                        {/* <td className="px-2 py-3 border border-gray-200">{item.AssignTo}</td> */}
+                                                        <td className="px-2 py-3 border border-gray-200 break-all whitespace-normal max-w-[200px]">{item.Email}</td>
+                                                        <td className="px-2 py-3 border border-gray-200 min-w-[100px]">{item.Date}</td>
+
+                                                        <td className="px-2 py-3 border border-gray-200 min-w-[90px] align-middle">
+                                                            <div className="grid grid-cols-2 gap-3 items-center h-full">
+                                                                <Button
+                                                                    sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px", }}
+                                                                    onClick={() => router.push(`/followups/guest/add/${item._id}`)}
+                                                                >
+                                                                    <MdAdd />
+                                                                </Button>
+
+                                                                <Button
+                                                                    sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px", }}
+                                                                    onClick={() => router.push(`/guest/edit/${item._id}`)}
+                                                                >
+                                                                    <MdEdit />
+                                                                </Button>
+
+                                                                <Button
+                                                                    sx={{ backgroundColor: "#FDECEA", color: "#C62828", minWidth: "32px", height: "32px", borderRadius: "8px", }}
+                                                                    onClick={() => {
+                                                                        setIsDeleteDialogOpen(true);
+                                                                        setDialogType("delete");
+                                                                        setDialogData({
+                                                                            id: item._id,
+                                                                            GuestName: item.GuestName,
+                                                                            ContactNumber: item.ContactNumber,
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <MdDelete />
+                                                                </Button>
+
+                                                                <Button
+                                                                    sx={{
+                                                                        backgroundColor: "#FFF0F5",
+                                                                        color: item.isFavourite ? "#E91E63" : "#C62828",
+                                                                        minWidth: "32px",
+                                                                        height: "32px",
+                                                                        borderRadius: "8px",
+
+                                                                    }}
+                                                                    onClick={() =>
+                                                                        handleFavouriteToggle(item._id, item.GuestName, item.ContactNumber, item.isFavourite ?? false)
+                                                                    }
+                                                                >
+                                                                    {item.isFavourite ? <MdFavorite /> : <MdFavoriteBorder />}
+                                                                </Button>
+                                                                <Button
+                                                                    className=" bg-gray-500"
+                                                                    sx={{
+                                                                        backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5",
+                                                                        color: item.isChecked ? "var(--color-primary)" : "#E91E63",
+                                                                        minWidth: "32px",
+                                                                        height: "32px",
+                                                                        borderRadius: "8px",
+
+                                                                    }}
+                                                                    onClick={() =>
+                                                                        handleChecked({ id: item?._id, isChecked: item?.isChecked })
+                                                                    }
+                                                                >
+                                                                    {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={10} className="text-center py-4 text-gray-500">
+                                                        No data available.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {/* Pagination */}
+                        <div className="flex justify-between items-center mt-3 py-3 px-5">
+                            <p className="text-sm">
+                                Page {currentTablePage} of {totalGuestPage}
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setCurrentTablePage(1)}
+                                    disabled={currentTablePage === 1}
+                                    className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                                    title="First page"
+                                >
+                                    <ChevronsLeft size={16} />
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        setCurrentTablePage((prev) => Math.max(prev - 1, 1))
+                                    }
+                                    disabled={currentTablePage === 1}
+                                    className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                                >
+                                    Prev
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        // normal pagination
+                                        if (currentTablePage < totalTablePages) {
+                                            setCurrentTablePage(prev => prev + 1);
+                                            return;
+                                        }
+
+                                        // last page → fetch more → then move
+                                        if (hasMoreGuests) {
+                                            await fetchMore();
+                                            setCurrentTablePage(prev => prev + 1);
+                                        }
+                                    }}
+                                    disabled={!hasMoreGuests && currentTablePage === totalTablePages}
+                                    className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                                <button
+                                    onClick={handleLastPage}
+                                    disabled={currentTablePage === totalTablePages && !hasMoreGuests}
+                                    className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                                    title="Last page"
+                                >
+                                    <ChevronsRight size={16} />
+                                </button>
+
+
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+        </ProtectedRoute>
+    );
+}
