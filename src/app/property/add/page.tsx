@@ -56,22 +56,19 @@ const SectionHeader = ({
       </div>
     </div>
     <div className="flex-1">
-      <h2 className="text-[15px] font-bold tracking-wide" style={{ color: "var(--color-secondary-darker)", fontFamily: "'Playfair Display', serif" }}>
+      <h2 className="section-title text-[15px] font-bold tracking-wide" style={{ fontFamily: "'Playfair Display', serif" }}>
         {title}
       </h2>
-      <p className="text-xs mt-0.5" style={{ color: "var(--color-gray)" }}>{subtitle}</p>
+      <p className="section-subtitle text-xs mt-0.5">{subtitle}</p>
     </div>
-    <div className="flex-shrink-0 h-px flex-1 hidden md:block" style={{ background: "linear-gradient(90deg, var(--color-primary-light), transparent)", maxWidth: "120px" }} />
+    <div className="section-divider flex-shrink-0 h-px flex-1 hidden md:block" style={{ maxWidth: "120px" }} />
   </div>
 );
 
 // ─── Section Card ─────────────────────────────────────────────────────────────
 const SectionCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div
-    className={`relative rounded-2xl p-8 max-sm:p-5 ${className}`}
-    style={{ background: "#ffffff", border: "1px solid var(--color-primary-light)", boxShadow: "0 2px 12px rgba(0,104,56,0.06)" }}
-  >
-    <div className="absolute top-0 left-8 right-8 h-[3px] rounded-b-full" style={{ background: "linear-gradient(90deg, var(--color-primary), var(--color-accent), transparent)" }} />
+  <div className={`section-card relative rounded-2xl p-8 max-sm:p-5 ${className}`}>
+    <div className="section-card-topbar absolute top-0 left-8 right-8 h-[3px] rounded-b-full" />
     {children}
   </div>
 );
@@ -88,24 +85,21 @@ const FileUpload: React.FC<{
     <label className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-primary)" }}>
       {label}
     </label>
-    <div
-      className="upload-zone relative flex flex-col items-center justify-center gap-1.5 h-32 rounded-xl cursor-pointer transition-all duration-300"
-      style={{ border: "2px dashed var(--color-primary-light)", background: "var(--color-primary-lighter)" }}
-    >
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: "var(--color-primary-light)" }}>
+    <div className="upload-zone relative flex flex-col items-center justify-center gap-1.5 h-32 rounded-xl cursor-pointer transition-all duration-300">
+      <div className="upload-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center mb-1">
         <ImageIcon size={18} style={{ color: "var(--color-primary)" }} />
       </div>
-      <span className="text-xs font-semibold" style={{ color: "var(--color-primary-dark)" }}>
+      <span className="upload-label text-xs font-semibold">
         {multiple ? "Click to upload images" : "Click to upload file"}
       </span>
-      <span className="text-[10px]" style={{ color: "var(--color-gray)" }}>PNG, JPG, PDF supported</span>
+      <span className="upload-hint text-[10px]">PNG, JPG, PDF supported</span>
       <input type="file" multiple={multiple} onChange={onChange} className="absolute inset-0 opacity-0 cursor-pointer" />
     </div>
     {previews.length > 0 && (
       <div className="flex flex-wrap gap-3 mt-1">
         {previews.map((src, index) => (
           <div key={index} className="relative group">
-            <img src={src} alt={`preview-${index}`} className="w-20 h-20 object-cover rounded-xl shadow-sm" style={{ border: "2px solid var(--color-primary-light)" }} />
+            <img src={src} alt={`preview-${index}`} className="preview-img w-20 h-20 object-cover rounded-xl shadow-sm" />
             {onRemove && (
               <button
                 type="button"
@@ -352,6 +346,7 @@ export default function PropertyAdd() {
         * { font-family: 'DM Sans', sans-serif; }
         .playfair { font-family: 'Playfair Display', serif; }
 
+        /* ── Light Mode Base ───────────────────────────────────────────── */
         .page-bg {
           background-color: var(--color-primary-lighter);
           background-image:
@@ -392,10 +387,49 @@ export default function PropertyAdd() {
           pointer-events: none;
         }
 
-        .progress-bar {
-          background: var(--color-primary-dark);
+        .progress-bar { background: var(--color-primary-dark); }
+
+        /* ── Section Card ─────────────────────────────────────────────── */
+        .section-card {
+          background: #ffffff;
+          border: 1px solid var(--color-primary-light);
+          box-shadow: 0 2px 12px rgba(0,104,56,0.06);
+        }
+        .section-card-topbar {
+          background: linear-gradient(90deg, var(--color-primary), var(--color-accent), transparent);
         }
 
+        /* ── Section Header texts ─────────────────────────────────────── */
+        .section-title   { color: var(--color-secondary-darker); }
+        .section-subtitle { color: var(--color-gray); }
+        .section-divider {
+          height: 1px;
+          background: linear-gradient(90deg, var(--color-primary-light), transparent);
+        }
+
+        /* ── Footer action bar ────────────────────────────────────────── */
+        .footer-bar {
+          background: #ffffff;
+          border: 1px solid var(--color-primary-light);
+          box-shadow: 0 2px 12px rgba(0,104,56,0.06);
+        }
+        .footer-note { color: var(--color-gray); }
+
+        /* ── Upload Zone ──────────────────────────────────────────────── */
+        .upload-zone {
+          border: 2px dashed var(--color-primary-light);
+          background: var(--color-primary-lighter);
+        }
+        .upload-zone:hover {
+          border-color: var(--color-primary) !important;
+          background: rgba(209,242,225,0.6) !important;
+        }
+        .upload-icon-wrap { background: var(--color-primary-light); }
+        .upload-label    { color: var(--color-primary-dark); }
+        .upload-hint     { color: var(--color-gray); }
+        .preview-img     { border: 2px solid var(--color-primary-light); }
+
+        /* ── Buttons ──────────────────────────────────────────────────── */
         .step-pill {
           display: inline-flex;
           align-items: center;
@@ -477,11 +511,6 @@ export default function PropertyAdd() {
           gap: 10px;
         }
 
-        .upload-zone:hover {
-          border-color: var(--color-primary) !important;
-          background: rgba(209,242,225,0.6) !important;
-        }
-
         .section-step-chip {
           display: inline-flex;
           align-items: center;
@@ -495,6 +524,109 @@ export default function PropertyAdd() {
           background: var(--color-primary-lighter);
           color: var(--color-primary);
           border: 1px solid var(--color-primary-light);
+        }
+
+        .nav-brand-text { color: var(--color-secondary-darker); }
+        .progress-item  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); }
+
+
+        /* ════════════════════════════════════════════════════════════════
+           DARK MODE OVERRIDES
+           All .dark class overrides below mirror the light styles above
+           ════════════════════════════════════════════════════════════════ */
+
+        .dark .page-bg {
+          background-color: #080f0b;
+          background-image:
+            radial-gradient(circle at 8% 15%,  rgba(0,104,56,0.12) 0%, transparent 35%),
+            radial-gradient(circle at 92% 85%, rgba(0,104,56,0.08) 0%, transparent 35%),
+            radial-gradient(circle at 50% 50%,  rgba(0,60,30,0.25) 0%, transparent 70%);
+        }
+
+        /* ── Top Nav ── */
+        .dark .top-nav {
+          background: rgba(8,15,11,0.97);
+          border-bottom-color: #1a3828;
+          box-shadow: 0 1px 12px rgba(0,0,0,0.4);
+        }
+        .dark .nav-back-btn {
+          color: #6ee7a0;
+        }
+        .dark .nav-back-btn:hover {
+          background: rgba(0,104,56,0.2);
+          color: #a7f3ca;
+        }
+        .dark .nav-brand-text {
+          color: #a7f3ca;
+        }
+
+        /* ── Hero Banner (gradient already dark — only tweak opacity blobs) ── */
+        .dark .hero-banner::before {
+          background: radial-gradient(circle, rgba(52,211,153,0.1), transparent 70%);
+        }
+
+        /* ── Progress bar ── */
+        .dark .progress-bar { background: #030a06; }
+        .dark .progress-item {
+          background: rgba(0,104,56,0.25);
+          color: rgba(180,230,200,0.8);
+        }
+
+        /* ── Section Cards ── */
+        .dark .section-card {
+          background: #0c1d14;
+          border-color: #1a3828;
+          box-shadow: 0 2px 18px rgba(0,0,0,0.35);
+        }
+        .dark .section-card-topbar {
+          background: linear-gradient(90deg, var(--color-primary), rgba(52,211,153,0.6), transparent);
+        }
+
+        /* ── Section Header texts ── */
+        .dark .section-title    { color: #c8edda; }
+        .dark .section-subtitle { color: #6aaa86; }
+        .dark .section-divider  { background: linear-gradient(90deg, #1a3828, transparent); }
+
+        /* ── Footer bar ── */
+        .dark .footer-bar {
+          background: #0c1d14;
+          border-color: #1a3828;
+          box-shadow: 0 2px 18px rgba(0,0,0,0.35);
+        }
+        .dark .footer-note { color: #6aaa86; }
+
+        /* ── Upload Zone ── */
+        .dark .upload-zone {
+          border-color: #1a3828;
+          background: #091410;
+        }
+        .dark .upload-zone:hover {
+          border-color: var(--color-primary) !important;
+          background: rgba(0,104,56,0.15) !important;
+        }
+        .dark .upload-icon-wrap { background: rgba(0,104,56,0.25); }
+        .dark .upload-label     { color: #a7f3ca; }
+        .dark .upload-hint      { color: #5a8a6e; }
+        .dark .preview-img      { border-color: #1a3828; }
+
+        /* ── Discard button ── */
+        .dark .discard-btn {
+          background: #0c1d14;
+          border-color: #1a3828;
+          color: #a7f3ca;
+        }
+        .dark .discard-btn:hover {
+          border-color: var(--color-primary);
+          background: rgba(0,104,56,0.2);
+          color: #c8edda;
+        }
+
+        /* ── Save btn (already dark green — keep as is, just brighten shadow) ── */
+        .dark .save-btn {
+          box-shadow: 0 3px 14px rgba(0,104,56,0.45);
+        }
+        .dark .save-btn:hover {
+          box-shadow: 0 6px 24px rgba(0,104,56,0.6);
         }
       `}</style>
 
@@ -517,10 +649,11 @@ export default function PropertyAdd() {
         <div className="sticky top-0 z-50 top-nav">
           <div className="max-w-7xl mx-auto px-2 sm:px-6 py-3 flex items-center justify-between">
             <button onClick={() => router.push("/property")} className="nav-back-btn">
-              <ArrowLeft size={15}  className="hidden sm:block"/>
+              <ArrowLeft size={15} className="hidden sm:block" />
               <span className="hidden sm:block">Back to Properties</span>
-               <span className="save-btn flex  items-center justify-center gap-1 p-2 sm:hidden"><ArrowLeft size={15} />Back </span>
-
+              <span className="save-btn flex items-center justify-center gap-1 p-2 sm:hidden">
+                <ArrowLeft size={15} />Back
+              </span>
             </button>
 
             <div className="flex items-center gap-2.5">
@@ -530,7 +663,7 @@ export default function PropertyAdd() {
               >
                 <Building2 size={15} className="text-white" />
               </div>
-              <span className="font-bold text-sm hidden sm:block" style={{ color: "var(--color-secondary-darker)" }}>
+              <span className="nav-brand-text font-bold text-sm hidden sm:block">
                 Property Manager
               </span>
             </div>
@@ -546,8 +679,8 @@ export default function PropertyAdd() {
               }
               {saving ? "Saving..." : "Save Property"}
             </button>
-            {/* for mobile screen */}
-              <button
+            {/* Mobile save button */}
+            <button
               onClick={handleSubmit}
               disabled={saving}
               className="save-btn flex sm:hidden items-center justify-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60"
@@ -556,7 +689,7 @@ export default function PropertyAdd() {
                 ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <Sparkles size={13} />
               }
-              {saving ? "Saving..." : "Save "}
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>
@@ -602,15 +735,15 @@ export default function PropertyAdd() {
         <div className="progress-bar">
           <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-5 overflow-x-auto scrollbar-hide">
             {[
-              { label: "Campaign", icon: <Building2 size={10} /> },
-              { label: "Identity", icon: <User size={10} /> },
-              { label: "Location", icon: <MapPin size={10} /> },
-              { label: "Pricing", icon: <DollarSign size={10} /> },
-              { label: "Media", icon: <ImageIcon size={10} /> },
+              { label: "Campaign",   icon: <Building2 size={10} /> },
+              { label: "Identity",   icon: <User size={10} /> },
+              { label: "Location",   icon: <MapPin size={10} /> },
+              { label: "Pricing",    icon: <DollarSign size={10} /> },
+              { label: "Media",      icon: <ImageIcon size={10} /> },
               { label: "Additional", icon: <Layers size={10} /> },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 flex-shrink-0">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold" style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)" }}>
+                <div className="progress-item flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold">
                   {item.icon}
                   {item.label}
                 </div>
@@ -773,11 +906,8 @@ export default function PropertyAdd() {
           )}
 
           {/* ── Footer Actions ── */}
-          <div
-            className="flex items-center justify-between py-5 px-8 rounded-2xl max-sm:flex-col max-sm:gap-4 max-sm:px-5"
-            style={{ background: "#fff", border: "1px solid var(--color-primary-light)", boxShadow: "0 2px 12px rgba(0,104,56,0.06)" }}
-          >
-            <p className="text-xs" style={{ color: "var(--color-gray)" }}>
+          <div className="footer-bar flex items-center justify-between py-5 px-8 rounded-2xl max-sm:flex-col max-sm:gap-4 max-sm:px-5">
+            <p className="footer-note text-xs">
               <span style={{ color: "var(--color-destructive)", fontWeight: 700 }}>* </span>
               Required fields must be filled before saving
             </p>
@@ -801,8 +931,8 @@ export default function PropertyAdd() {
                 }
                 {saving ? "Saving Property..." : "Save Property"}
               </button>
-              {/* for mobile screen */}
-                <button
+              {/* Mobile save button */}
+              <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={saving}
@@ -812,7 +942,7 @@ export default function PropertyAdd() {
                   ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   : <ChevronRight size={14} />
                 }
-                {saving ? "Saving Property..." : "Save "}
+                {saving ? "Saving Property..." : "Save"}
               </button>
             </div>
           </div>

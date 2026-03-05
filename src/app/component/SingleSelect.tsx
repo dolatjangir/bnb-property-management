@@ -70,7 +70,7 @@ export default function SingleSelect({
     >
       {/* Label */}
       <label
-        className={`absolute left-3 transition-all duration-200 px-1 bg-white pointer-events-none
+        className={`absolute left-3 transition-all duration-200 px-1 bg-[var(--color-primary-lighter)] dark:bg-[#091510] pointer-events-none
           ${
             isLabelFloating
               ? "-top-2 text-xs text-[var(--color-primary)]"
@@ -83,7 +83,7 @@ export default function SingleSelect({
       {/* Select box */}
       <div
         onClick={() => setOpen(!open)}
-        className={`w-full border rounded-md px-3 py-2 cursor-pointer bg-white flex justify-between items-center
+        className={`w-full border rounded-md px-3 py-2 cursor-pointer bg-[var(--color-primary-lighter)]/60 dark:bg-[#091510]/60 flex justify-between items-center
           ${
             error ? "border-red-500" : "border-gray-400"
           } transition-colors`}

@@ -306,8 +306,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
 
         [data-sidebar="menu-button"]:hover {
-          background: rgba(59, 130, 246, 0.08);
-          color: #1e293b;
+          background: rgba(0, 104, 56, 0.09);
+          color: #006838;
           transform: translateX(3px);
         }
 
@@ -355,7 +355,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
 
         [data-sidebar="menu-button"]:hover svg {
-          color: #3b82f6;
+          color: #006838;
           transform: scale(1.1);
         }
 

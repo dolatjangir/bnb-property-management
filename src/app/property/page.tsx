@@ -584,7 +584,7 @@ export default function Property() {
           </div>
 
           {/* Bulk action toolbar */}
-          <div className="flex flex-wrap justify-between items-center px-6 py-3 gap-2 border-b border-[var(--color-primary-light)] dark:border-[#1a3a24] bg-white dark:bg-[#0d1f14]">
+          <div className="flex flex-wrap justify-between items-center px-6 py-3 gap-2  bg-white dark:bg-[#0d1f14]">
             <div className="flex flex-wrap items-center gap-2">
               <label htmlFor="selectall" className={`${btnGreen} cursor-pointer`}>
                 <input id="selectall" type="checkbox" className="hidden" checked={currentRows.length > 0 && currentRows.every((r) => selectedPropertys.includes(r._id))} onChange={handleSelectAll} />
@@ -605,108 +605,234 @@ export default function Property() {
           </div>
 
           {/* Table */}
-          <div className="overflow-auto" ref={scrollRef}>
-            <div className="max-h-[600px] overflow-y-auto">
-              <table className="table-auto w-full border-separate border-spacing-0 text-sm">
-                <thead className="sticky top-0 z-[5]">
-                  <tr>
-                    <th className={`${TH} px-3 w-10`}>
-                      <input id="sel-all-th" type="checkbox" className="hidden" checked={currentRows.length > 0 && currentRows.every((r) => selectedPropertys.includes(r._id))} onChange={handleSelectAll} />
-                    </th>
-                    <th className={TH}>S.No.</th>
-                    <th className={TH}>{getLabel("propertyName", "Property Name")}</th>
-                    <th className={TH}>{getLabel("PropertyType", "Property Type")}</th>
-                    <th className={TH}>{getLabel("Address", "Address")}</th>
-                    <th className={TH}>{getLabel("ContactNumber", "Contact No")}</th>
-                    <th className={TH}>{getLabel("Email", "Email")}</th>
-                    <th className={TH}>{getLabel("PropertyDate", "Date")}</th>
-                    <th className={`${TH} border-r-0`}>Actions</th>
-                  </tr>
-                </thead>
+       <div className="w-full bg-white dark:bg-[var(--color-primary)] rounded-lg  shadow-sm">
 
-                <tbody>
-                  {propertyTableLoader ? (
-                    <tr>
-                      <td colSpan={9} className="text-center py-16 bg-white dark:bg-[#0d1f14]">
-                        <div className="flex flex-col items-center gap-3">
-                          <HashLoader loading color="var(--color-primary)" size={32} />
-                          <p className="text-sm text-[#9CA3AF] dark:text-[#6b7280] font-medium">Loading properties…</p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : currentRows.length > 0 ? (
-                    currentRows.map((item, index) => {
-                      const isSel = selectedPropertys.includes(item._id);
-                      return (
-                        <tr key={item._id} className={`transition-all duration-150 ${isSel ? "bg-[var(--color-primary-lighter)] dark:bg-[rgba(52,211,153,0.06)]" : "bg-white dark:bg-[#0d1f14] hover:bg-[var(--color-primary-lighter)]/50 dark:hover:bg-[rgba(52,211,153,0.03)]"}`}>
+  {/* Table */}
+  <div className="max-h-[600px] overflow-y-auto" ref={scrollRef}>
+    <table className="w-full border-collapse">
+      <thead className="bg-[var(--color-primary-lighter)] dark:bg-[#091510]  sticky top-0 ">
+        <tr>
+          <th className="w-8 px-3 py-3 border-b border-gray-200 dark:border-[#091510]/90">
+            {/* <input 
+              id="sel-all-th" 
+              type="checkbox" 
+              className="w-3.5 h-3.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)] dark:border-gray-600 dark:bg-gray-800 cursor-pointer"
+              checked={currentRows.length > 0 && currentRows.every((r) => selectedPropertys.includes(r._id))} 
+              onChange={handleSelectAll} 
+            /> */}
+          </th>
+          <th className="w-10 px-2 py-3 text-left text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90">
+            S.No
+          </th>
+          <th className="px-3 py-3 text-left text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-44">
+            Property Name
+          </th>
+          <th className="px-3 py-3 text-left text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-28">
+            Type
+          </th>
+          <th className="px-3 py-3 text-left text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-48">
+            Address
+          </th>
+          <th className="px-3 py-3 text-center text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-36">
+            Contact
+          </th>
+          <th className="px-3 py-3 text-left text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-40">
+            Email
+          </th>
+          <th className="px-3 py-3 text-left text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-24">
+            Date
+          </th>
+          <th className="px-3 py-3 text-center text-[11px] font-bold text-[var(--color-primary-dark)] dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-[#091510]/90 w-28">
+            Actions
+          </th>
+        </tr>
+      </thead>
 
-                          <td className={`${TD} px-3 w-10`}>
-                            <input type="checkbox" checked={isSel} onChange={() => handleSelectRow(item._id)} className="accent-[var(--color-primary)] w-3.5 h-3.5" />
-                          </td>
-                          <td className={`${TD} text-[#9CA3AF] dark:text-[#6b7280] font-medium text-xs`}>{(currentTablePage - 1) * rowsPerTablePage + (index + 1)}</td>
-                          <td className={`${TD} font-semibold text-[var(--color-secondary-darker)] dark:text-white whitespace-nowrap`}>{item.Name}</td>
-                          <td className={`${TD} text-[#6b7280] dark:text-[#9CA3AF] max-w-[100px] break-all whitespace-normal`}>{item.SubType}</td>
-                          <td className={`${TD} text-[#6b7280] dark:text-[#9CA3AF] max-w-[200px] break-all whitespace-normal`}>{item.Description}</td>
-
-                          {/* Contact */}
-                          <td className={`${TD} text-center`}>
-                            {item.ContactNumber && (
-                              <div className="flex flex-col items-center gap-1.5">
-                                <span className="text-xs font-semibold text-[var(--color-secondary-darker)] dark:text-white tabular-nums">{item.ContactNumber}</span>
-                                <div className="flex gap-1">
-                                  <Button component="a" href={`tel:${item.ContactNumber}`} sx={{ backgroundColor: "rgba(0,104,56,0.08)", color: "var(--color-primary)", minWidth: "26px", height: "22px", borderRadius: "6px", padding: 0 }}><FaPhone size={10} /></Button>
-                                  <Button sx={{ backgroundColor: "rgba(0,104,56,0.08)", color: "var(--color-primary)", minWidth: "26px", height: "22px", borderRadius: "6px", padding: 0 }} onClick={() => { setSelectedPropertys([item._id]); setSelectUser(item._id); setIsMailAllOpen(true); fetchEmailTemplates(); }}><MdEmail size={12} /></Button>
-                                  <Button onClick={() => { setSelectedPropertys([item._id]); setSelectUser(item._id); setIsWhatsappAllOpen(true); fetchWhatsappTemplates(); }} sx={{ backgroundColor: "rgba(0,104,56,0.08)", color: "var(--color-primary)", minWidth: "26px", height: "22px", borderRadius: "6px", padding: 0 }}><FaWhatsapp size={11} /></Button>
-                                </div>
-                                {duplicateContacts[item.ContactNumber] && (
-                                  <Button onClick={() => { setIsTableDialogOpen(true); handleTableDialogData(item.ContactNumber); }} sx={{ backgroundColor: "rgba(0,104,56,0.08)", color: "var(--color-primary)", minWidth: "60px", height: "20px", borderRadius: "6px", fontSize: "10px", gap: "4px" }}>
-                                    <FaEye size={10} /> View
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          <td className={`${TD} text-[#6b7280] dark:text-[#9CA3AF] max-w-[180px] break-all whitespace-normal text-xs`}>{item.Email}</td>
-                          <td className={`${TD} text-xs text-[#6b7280] dark:text-[#9CA3AF] whitespace-nowrap font-medium`}>{item.Date}</td>
-
-                          {/* Actions */}
-                          <td className={`${TD} border-r-0`}>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <Button sx={{ backgroundColor: "rgba(0,104,56,0.08)", color: "var(--color-primary)", minWidth: "32px", height: "30px", borderRadius: "8px" }} onClick={() => router.push(`/followups/property/add/${item._id}`)}>
-                                <MdAdd size={16} />
-                              </Button>
-                              <Button sx={{ backgroundColor: "rgba(0,104,56,0.08)", color: "var(--color-primary)", minWidth: "32px", height: "30px", borderRadius: "8px" }} onClick={() => router.push(`/property/edit/${item._id}`)}>
-                                <MdEdit size={15} />
-                              </Button>
-                              <Button sx={{ backgroundColor: "#FEF2F2", color: "#DC2626", minWidth: "32px", height: "30px", borderRadius: "8px" }} onClick={() => { setIsDeleteDialogOpen(true); setDialogType("delete"); setDialogData({ id: item._id, propertyName: item.Name, ContactNumber: item.ContactNumber }); }}>
-                                <MdDelete size={15} />
-                              </Button>
-                              <Button sx={{ backgroundColor: item.isFavourite ? "#FFF0F5" : "rgba(0,104,56,0.05)", color: item.isFavourite ? "#E91E63" : "#9CA3AF", minWidth: "32px", height: "30px", borderRadius: "8px" }} onClick={() => handleFavouriteToggle(item._id, item.Name, item.ContactNumber, item.isFavourite ?? false)}>
-                                {item.isFavourite ? <MdFavorite size={15} /> : <MdFavoriteBorder size={15} />}
-                              </Button>
-                              <Button sx={{ backgroundColor: item.isChecked ? "rgba(0,104,56,0.08)" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", height: "30px", borderRadius: "8px", gridColumn: "span 2" }} onClick={() => handleChecked({ id: item?._id, isChecked: item?.isChecked })}>
-                                {item.isChecked ? <IoCheckmarkDoneOutline size={16} /> : <IoCheckmark size={16} />}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+      <tbody className="divide-y divide-gray-100 dark:divide-[#091510]/60">
+        {propertyTableLoader ? (
+          <tr>
+            <td colSpan={9} className="py-16 bg-white dark:bg-[#0d1f14]">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-[var(--color-primary-light)] border-t-[var(--color-primary)] rounded-full animate-spin"></div>
+                <p className="text-xs text-gray-500 dark:text-gray-500 font-medium">Loading properties...</p>
+              </div>
+            </td>
+          </tr>
+        ) : currentRows.length > 0 ? (
+          currentRows.map((item, index) => {
+            const isSel = selectedPropertys.includes(item._id);
+            const rowNum = (currentTablePage - 1) * rowsPerTablePage + (index + 1);
+            
+            return (
+              <tr 
+                key={item._id} 
+                className={`transition-colors duration-150 ${isSel ? "bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary-dark)]/20" : "bg-white dark:bg-[#091510]/90 hover:bg-gray-50 dark:hover:bg-[#091510]/80"}`}
+              >
+                {/* Checkbox */}
+                <td className="px-3 py-3">
+                  <input 
+                    type="checkbox" 
+                    checked={isSel} 
+                    onChange={() => handleSelectRow(item._id)} 
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-[var(--color-primary)] focus:ring-[var(--color-primary)] dark:border-gray-600 dark:bg-gray-800 cursor-pointer"
+                  />
+                </td>
+                
+                {/* Serial Number */}
+                <td className="px-2 py-3">
+                  <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-600 tabular-nums">
+                    {rowNum}
+                  </span>
+                </td>
+                
+                {/* Property Name */}
+                <td className="px-3 py-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[12px] font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[160px]" title={item.Name}>
+                      {item.Name}
+                    </span>
+                    {item.isFavourite && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-pink-500">
+                        <MdFavorite size={10} /> Favorite
+                      </span>
+                    )}
+                  </div>
+                </td>
+                
+                {/* Property Type */}
+                <td className="px-3 py-3">
+                  <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-semibold bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary-dark)]/30 text-[var(--color-primary-darker)] dark:text-[var(--color-primary-light)] border border-[var(--color-primary-light)] dark:border-[var(--color-primary-dark)]/50">
+                    {item.SubType || 'N/A'}
+                  </span>
+                </td>
+                
+                {/* Address */}
+                <td className="px-3 py-3">
+                  <p className="text-[11px] text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed" title={item.Description}>
+                    {item.Description || '-'}
+                  </p>
+                </td>
+                
+                {/* Contact */}
+                <td className="px-2 py-3">
+                  {item.ContactNumber ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 tabular-nums">
+                        {item.ContactNumber}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={`tel:${item.ContactNumber}`}
+                          className="p-1.5 rounded bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary-dark)]/30 text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-dark)]/50 transition-colors"
+                          title="Call"
+                        >
+                          <FaPhone size={9} />
+                        </a>
+                        <button
+                          onClick={() => { setSelectedPropertys([item._id]); setSelectUser(item._id); setIsMailAllOpen(true); fetchEmailTemplates(); }}
+                          className="p-1.5 rounded bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary-dark)]/30 text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] dark:hover:bg-[var(--color-primary-dark)]/50 transition-colors"
+                          title="Email"
+                        >
+                          <MdEmail size={10} />
+                        </button>
+                        <button
+                          onClick={() => { setSelectedPropertys([item._id]); setSelectUser(item._id); setIsWhatsappAllOpen(true); fetchWhatsappTemplates(); }}
+                          className="p-1.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                          title="WhatsApp"
+                        >
+                          <FaWhatsapp size={10} />
+                        </button>
+                      </div>
+                      {duplicateContacts[item.ContactNumber] && (
+                        <button
+                          onClick={() => { setIsTableDialogOpen(true); handleTableDialogData(item.ContactNumber); }}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-semibold hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                        >
+                          <FaEye size={8} /> View
+                        </button>
+                      )}
+                    </div>
                   ) : (
-                    <tr>
-                      <td colSpan={9} className="text-center py-16 bg-white dark:bg-[#0d1f14]">
-                        <div className="flex flex-col items-center gap-3">
-                          <Building2 size={32} className="opacity-20 text-[var(--color-primary)]" />
-                          <p className="text-sm text-[#9CA3AF] dark:text-[#6b7280] font-medium">No properties found</p>
-                        </div>
-                      </td>
-                    </tr>
+                    <span className="text-[11px] text-gray-400 dark:text-gray-600">-</span>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </td>
+                
+                {/* Email */}
+                <td className="px-3 py-3">
+                  <span className="text-[11px] text-gray-600 dark:text-gray-400 truncate block max-w-[140px]" title={item.Email}>
+                    {item.Email || '-'}
+                  </span>
+                </td>
+                
+                {/* Date */}
+                <td className="px-3 py-3">
+                  <span className="text-[11px] text-gray-500 dark:text-gray-500 font-medium whitespace-nowrap">
+                    {item.Date}
+                  </span>
+                </td>
+                
+                {/* Actions */}
+                <td className="px-2 py-3">
+                  <div className="grid grid-cols-2 gap-1">
+                    {/* <button
+                      onClick={() => router.push(`/followups/property/add/${item._id}`)}
+                      className="p-1.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-[var(--color-primary-lighter)] hover:text-[var(--color-primary)] dark:hover:bg-[var(--color-primary-dark)]/30 dark:hover:text-[var(--color-primary-light)] transition-colors"
+                      title="Add Follow-up"
+                    >
+                      <MdAdd size={14} />
+                    </button> */}
+                    <button
+                      onClick={() => router.push(`/property/edit/${item._id}`)}
+                      className="p-1.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                      title="Edit"
+                    >
+                      <MdEdit size={13} />
+                    </button>
+                    <button
+                      onClick={() => { setIsDeleteDialogOpen(true); setDialogType("delete"); setDialogData({ id: item._id, propertyName: item.Name, ContactNumber: item.ContactNumber }); }}
+                      className="p-1.5 rounded bg-green-100 dark:bg-green-900/30 text-gray-600 dark:text-gray-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
+                      title="Delete"
+                    >
+                      <MdDelete size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleFavouriteToggle(item._id, item.Name, item.ContactNumber, item.isFavourite ?? false)}
+                      className={`p-1.5 rounded transition-colors ${item.isFavourite ? 'bg-green-100 dark:bg-green-900/30 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-pink-600 dark:text-pink-400' : 'bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-gray-400 hover:text-pink-500'}`}
+                      title={item.isFavourite ? 'Remove Favorite' : 'Add Favorite'}
+                    >
+                      {item.isFavourite ? <MdFavorite size={13} /> : <MdFavoriteBorder size={13} />}
+                    </button>
+                    <button
+                      onClick={() => handleChecked({ id: item?._id, isChecked: item?.isChecked })}
+                      className={`p-1.5 rounded transition-colors ${item.isChecked ? 'bg-green-100 dark:bg-green-900/30 text-[var(--color-primary)] dark:bg-green-900/30 dark:hover:bg-green-900/50' : 'bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 text-gray-400 hover:text-[var(--color-primary)]'}`}
+                      title={item.isChecked ? 'Checked' : 'Mark Checked'}
+                    >
+                      {item.isChecked ? <IoCheckmarkDoneOutline size={14} /> : <IoCheckmark size={14} />}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })
+        ) : (
+          <tr>
+            <td colSpan={9} className="py-16 bg-white dark:bg-[#0B1120]">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <Building2 size={20} className="text-gray-400 dark:text-gray-600" />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-500 font-medium">No properties found</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-600">Add a new property to get started</p>
+              </div>
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+
+ 
+</div>
 
           {/* Pagination */}
           <div className="flex flex-wrap justify-between items-center px-6 py-4 gap-3 border-t border-[var(--color-primary-light)] dark:border-[#1a3a24] bg-[var(--color-primary-lighter)] dark:bg-[#091510]">

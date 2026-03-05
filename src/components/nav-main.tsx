@@ -58,7 +58,7 @@ export function NavMain({
                     <SidebarMenuButton
                       tooltip={item.title}
                       className={`cursor-pointer text-[16px] 
-                        ${isActive ? "bg-[var(--color-primary)] !text-white" : " hover:bg-gray-200 hover:text-[var(--color-primary)]"}`}
+                        ${isActive ? "bg-[var(--color-primary)] text-white! hover:text-[var(--color-primary)]!" : " hover:bg-gray-200"}`}
                     >
                       {item.icon && <item.icon  />}
                       <span className="">{item.title}</span>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, X, Building2, MapPin, User, DollarSign, Image as ImageIcon, 
-  Layers, ChevronRight, Sparkles, Save
+  Layers, ChevronRight, Save
 } from "lucide-react";
 import SingleSelect from "@/app/component/SingleSelect";
 import DateSelector from "@/app/component/DateSelector";
@@ -59,22 +59,19 @@ const SectionHeader = ({
       </div>
     </div>
     <div className="flex-1 min-w-0">
-      <h2 className="text-sm sm:text-[15px] font-bold tracking-wide leading-tight" style={{ color: "var(--color-secondary-darker)", fontFamily: "'Playfair Display', serif" }}>
+      <h2 className="section-title text-sm sm:text-[15px] font-bold tracking-wide leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
         {title}
       </h2>
-      <p className="text-[11px] sm:text-xs mt-0.5 leading-relaxed" style={{ color: "var(--color-gray)" }}>{subtitle}</p>
+      <p className="section-subtitle text-[11px] sm:text-xs mt-0.5 leading-relaxed">{subtitle}</p>
     </div>
-    <div className="flex-shrink-0 h-px flex-1 hidden md:block" style={{ background: "linear-gradient(90deg, var(--color-primary-light), transparent)", maxWidth: "120px" }} />
+    <div className="section-divider flex-shrink-0 h-px flex-1 hidden md:block" style={{ maxWidth: "120px" }} />
   </div>
 );
 
 // ─── Section Card ─────────────────────────────────────────────────────────────
 const SectionCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <div
-    className={`relative rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 ${className}`}
-    style={{ background: "#ffffff", border: "1px solid var(--color-primary-light)", boxShadow: "0 2px 12px rgba(0,104,56,0.06)" }}
-  >
-    <div className="absolute top-0 left-4 right-4 sm:left-8 sm:right-8 h-[2px] sm:h-[3px] rounded-b-full" style={{ background: "linear-gradient(90deg, var(--color-primary), var(--color-accent), transparent)" }} />
+  <div className={`section-card relative rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 ${className}`}>
+    <div className="section-card-topbar absolute top-0 left-4 right-4 sm:left-8 sm:right-8 h-[2px] sm:h-[3px] rounded-b-full" />
     {children}
   </div>
 );
@@ -91,28 +88,24 @@ const FileUpload: React.FC<{
     <label className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-primary)" }}>
       {label}
     </label>
-    <div
-      className="upload-zone relative flex flex-col items-center justify-center gap-1.5 h-28 sm:h-32 rounded-xl cursor-pointer transition-all duration-300 px-4"
-      style={{ border: "2px dashed var(--color-primary-light)", background: "var(--color-primary-lighter)" }}
-    >
-      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-1" style={{ background: "var(--color-primary-light)" }}>
+    <div className="upload-zone relative flex flex-col items-center justify-center gap-1.5 h-28 sm:h-32 rounded-xl cursor-pointer transition-all duration-300 px-4">
+      <div className="upload-icon-wrap w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mb-1">
         <ImageIcon size={16} className="sm:w-[18px] sm:h-[18px]" style={{ color: "var(--color-primary)" }} />
       </div>
-      <span className="text-[11px] sm:text-xs font-semibold text-center" style={{ color: "var(--color-primary-dark)" }}>
+      <span className="upload-label text-[11px] sm:text-xs font-semibold text-center">
         {multiple ? "Click to upload images" : "Click to upload file"}
       </span>
-      <span className="text-[9px] sm:text-[10px] text-center" style={{ color: "var(--color-gray)" }}>PNG, JPG, PDF supported</span>
+      <span className="upload-hint text-[9px] sm:text-[10px] text-center">PNG, JPG, PDF supported</span>
       <input type="file" multiple={multiple} onChange={onChange} className="absolute inset-0 opacity-0 cursor-pointer" />
     </div>
     {previews.length > 0 && (
       <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 sm:mt-3">
         {previews.map((src, index) => (
           <div key={index} className="relative group">
-            <img 
-              src={src} 
-              alt={`preview-${index}`} 
-              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg sm:rounded-xl shadow-sm" 
-              style={{ border: "2px solid var(--color-primary-light)" }} 
+            <img
+              src={src}
+              alt={`preview-${index}`}
+              className="preview-img w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg sm:rounded-xl shadow-sm"
             />
             {onRemove && (
               <button
@@ -182,7 +175,6 @@ export default function PropertyEdit() {
     return fieldsObj;
   };
 
-  // Fetch existing property
   useEffect(() => {
     const fetchProperty = async () => {
       try {
@@ -402,6 +394,7 @@ export default function PropertyEdit() {
         * { font-family: 'DM Sans', sans-serif; }
         .playfair { font-family: 'Playfair Display', serif; }
 
+        /* ── Light Mode Base ───────────────────────────────────────────── */
         .page-bg {
           background-color: var(--color-primary-lighter);
           background-image:
@@ -442,10 +435,49 @@ export default function PropertyEdit() {
           pointer-events: none;
         }
 
-        .progress-bar {
-          background: var(--color-primary-dark);
+        .progress-bar { background: var(--color-primary-dark); }
+
+        /* ── Section Card ─────────────────────────────────────────────── */
+        .section-card {
+          background: #ffffff;
+          border: 1px solid var(--color-primary-light);
+          box-shadow: 0 2px 12px rgba(0,104,56,0.06);
+        }
+        .section-card-topbar {
+          background: linear-gradient(90deg, var(--color-primary), var(--color-accent), transparent);
         }
 
+        /* ── Section Header texts ─────────────────────────────────────── */
+        .section-title    { color: var(--color-secondary-darker); }
+        .section-subtitle { color: var(--color-gray); }
+        .section-divider  {
+          height: 1px;
+          background: linear-gradient(90deg, var(--color-primary-light), transparent);
+        }
+
+        /* ── Footer action bar ────────────────────────────────────────── */
+        .footer-bar {
+          background: #ffffff;
+          border: 1px solid var(--color-primary-light);
+          box-shadow: 0 2px 12px rgba(0,104,56,0.06);
+        }
+        .footer-note { color: var(--color-gray); }
+
+        /* ── Upload Zone ──────────────────────────────────────────────── */
+        .upload-zone {
+          border: 2px dashed var(--color-primary-light);
+          background: var(--color-primary-lighter);
+        }
+        .upload-zone:hover {
+          border-color: var(--color-primary) !important;
+          background: rgba(209,242,225,0.6) !important;
+        }
+        .upload-icon-wrap { background: var(--color-primary-light); }
+        .upload-label     { color: var(--color-primary-dark); }
+        .upload-hint      { color: var(--color-gray); }
+        .preview-img      { border: 2px solid var(--color-primary-light); }
+
+        /* ── Buttons ──────────────────────────────────────────────────── */
         .step-pill {
           display: inline-flex;
           align-items: center;
@@ -461,12 +493,8 @@ export default function PropertyEdit() {
           border: 1px solid rgba(255,255,255,0.2);
           backdrop-filter: blur(8px);
         }
-
         @media (min-width: 640px) {
-          .step-pill {
-            padding: 4px 14px;
-            font-size: 11px;
-          }
+          .step-pill { padding: 4px 14px; font-size: 11px; }
         }
 
         .save-btn {
@@ -507,17 +535,6 @@ export default function PropertyEdit() {
           color: var(--color-primary);
         }
 
-        .back-btn {
-          color: rgba(255,255,255,0.8);
-          font-weight: 500;
-          font-size: 14px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s;
-        }
-        .back-btn:hover { color: #fff; gap: 10px; }
-
         .nav-back-btn {
           color: var(--color-primary);
           font-weight: 500;
@@ -533,40 +550,108 @@ export default function PropertyEdit() {
           background: var(--color-primary-lighter);
           gap: 10px;
         }
-
         @media (min-width: 640px) {
-          .nav-back-btn {
-            font-size: 14px;
-          }
+          .nav-back-btn { font-size: 14px; }
         }
 
-        .upload-zone:hover {
+        .nav-brand-text { color: var(--color-secondary-darker); }
+        .progress-item  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.75); }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+        /* ════════════════════════════════════════════════════════════════
+           DARK MODE OVERRIDES
+           ════════════════════════════════════════════════════════════════ */
+
+        .dark .page-bg {
+          background-color: #080f0b;
+          background-image:
+            radial-gradient(circle at 8% 15%,  rgba(0,104,56,0.12) 0%, transparent 35%),
+            radial-gradient(circle at 92% 85%, rgba(0,104,56,0.08) 0%, transparent 35%),
+            radial-gradient(circle at 50% 50%,  rgba(0,60,30,0.25) 0%, transparent 70%);
+        }
+
+        /* ── Top Nav ── */
+        .dark .top-nav {
+          background: rgba(8,15,11,0.97);
+          border-bottom-color: #1a3828;
+          box-shadow: 0 1px 12px rgba(0,0,0,0.4);
+        }
+        .dark .nav-back-btn {
+          color: #6ee7a0;
+        }
+        .dark .nav-back-btn:hover {
+          background: rgba(0,104,56,0.2);
+          color: #a7f3ca;
+        }
+        .dark .nav-brand-text {
+          color: #a7f3ca;
+        }
+
+        /* ── Progress bar ── */
+        .dark .progress-bar { background: #030a06; }
+        .dark .progress-item {
+          background: rgba(0,104,56,0.25);
+          color: rgba(180,230,200,0.8);
+        }
+
+        /* ── Section Cards ── */
+        .dark .section-card {
+          background: #0c1d14;
+          border-color: #1a3828;
+          box-shadow: 0 2px 18px rgba(0,0,0,0.35);
+        }
+        .dark .section-card-topbar {
+          background: linear-gradient(90deg, var(--color-primary), rgba(52,211,153,0.6), transparent);
+        }
+
+        /* ── Section Header texts ── */
+        .dark .section-title    { color: #c8edda; }
+        .dark .section-subtitle { color: #6aaa86; }
+        .dark .section-divider  { background: linear-gradient(90deg, #1a3828, transparent); }
+
+        /* ── Footer bar ── */
+        .dark .footer-bar {
+          background: #0c1d14;
+          border-color: #1a3828;
+          box-shadow: 0 2px 18px rgba(0,0,0,0.35);
+        }
+        .dark .footer-note { color: #6aaa86; }
+
+        /* ── Upload Zone ── */
+        .dark .upload-zone {
+          border-color: #1a3828;
+          background: #091410;
+        }
+        .dark .upload-zone:hover {
           border-color: var(--color-primary) !important;
-          background: rgba(209,242,225,0.6) !important;
+          background: rgba(0,104,56,0.15) !important;
+        }
+        .dark .upload-icon-wrap { background: rgba(0,104,56,0.25); }
+        .dark .upload-label     { color: #a7f3ca; }
+        .dark .upload-hint      { color: #5a8a6e; }
+        .dark .preview-img      { border-color: #1a3828; }
+
+        /* ── Discard button ── */
+        .dark .discard-btn {
+          background: #0c1d14;
+          border-color: #1a3828;
+          color: #a7f3ca;
+        }
+        .dark .discard-btn:hover {
+          border-color: var(--color-primary);
+          background: rgba(0,104,56,0.2);
+          color: #c8edda;
         }
 
-        .section-step-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 10px;
-          border-radius: 999px;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          background: var(--color-primary-lighter);
-          color: var(--color-primary);
-          border: 1px solid var(--color-primary-light);
+        /* ── Save btn shadow boost in dark ── */
+        .dark .save-btn {
+          box-shadow: 0 3px 14px rgba(0,104,56,0.45);
         }
-
-        /* Mobile-specific scrollbar hiding */
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+        .dark .save-btn:hover {
+          box-shadow: 0 6px 24px rgba(0,104,56,0.6);
         }
       `}</style>
 
@@ -603,7 +688,7 @@ export default function PropertyEdit() {
               >
                 <Building2 size={13} className="sm:w-[15px] sm:h-[15px] text-white" />
               </div>
-              <span className="font-bold text-xs sm:text-sm hidden sm:inline" style={{ color: "var(--color-secondary-darker)" }}>
+              <span className="nav-brand-text font-bold text-xs sm:text-sm hidden sm:inline">
                 Property Manager
               </span>
             </div>
@@ -664,19 +749,19 @@ export default function PropertyEdit() {
         <div className="progress-bar overflow-x-auto scrollbar-hide">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center gap-3 sm:gap-5 min-w-max">
             {[
-              { label: "Campaign", icon: <Building2 size={10} /> },
-              { label: "Identity", icon: <User size={10} /> },
-              { label: "Location", icon: <MapPin size={10} /> },
-              { label: "Pricing", icon: <DollarSign size={10} /> },
-              { label: "Media", icon: <ImageIcon size={10} /> },
+              { label: "Campaign",   icon: <Building2 size={10} /> },
+              { label: "Identity",   icon: <User size={10} /> },
+              { label: "Location",   icon: <MapPin size={10} /> },
+              { label: "Pricing",    icon: <DollarSign size={10} /> },
+              { label: "Media",      icon: <ImageIcon size={10} /> },
               { label: "Additional", icon: <Layers size={10} /> },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold" style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)" }}>
+                <div className="progress-item flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold">
                   {item.icon}
                   <span className="hidden sm:inline">{item.label}</span>
                 </div>
-                {i < 5 && <ChevronRight size={10} className="sm:w-[10px] sm:h-[10px]" style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }} />}
+                {i < 5 && <ChevronRight size={10} style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }} />}
               </div>
             ))}
           </div>
@@ -804,7 +889,7 @@ export default function PropertyEdit() {
             </div>
           </SectionCard>
 
-          {/* Section 5 — Media - FULLY RESPONSIVE */}
+          {/* Section 5 — Media */}
           <SectionCard>
             <SectionHeader icon={<ImageIcon size={14} className="sm:w-4 sm:h-4" />} title="Media & Visuals" subtitle="Upload property images and site plans" step={5} />
             <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
@@ -834,11 +919,8 @@ export default function PropertyEdit() {
           )}
 
           {/* ── Footer Actions ── */}
-          <div
-            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-0 py-4 sm:py-5 px-4 sm:px-8 rounded-xl sm:rounded-2xl"
-            style={{ background: "#fff", border: "1px solid var(--color-primary-light)", boxShadow: "0 2px 12px rgba(0,104,56,0.06)" }}
-          >
-            <p className="text-[11px] sm:text-xs text-center sm:text-left" style={{ color: "var(--color-gray)" }}>
+          <div className="footer-bar flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-0 py-4 sm:py-5 px-4 sm:px-8 rounded-xl sm:rounded-2xl">
+            <p className="footer-note text-[11px] sm:text-xs text-center sm:text-left">
               <span style={{ color: "var(--color-destructive)", fontWeight: 700 }}>* </span>
               Required fields must be filled before saving
             </p>
